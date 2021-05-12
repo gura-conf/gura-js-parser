@@ -1,0 +1,33 @@
+{
+  "name": "gura-ts-parser",
+  "version": "0.1.0",
+  "description": "A Gura parser for Javascript/Typescript",
+  "scripts": {
+    "test": "jest"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "/dist"
+  ],
+  "author": "JWare Solutions",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.14.2",
+    "@babel/preset-env": "^7.14.2",
+    "@babel/preset-typescript": "^7.13.0",
+    "@types/jest": "^26.0.23",
+    "@typescript-eslint/eslint-plugin": "^4.23.0",
+    "@typescript-eslint/parser": "^4.23.0",
+    "babel-jest": "^26.6.3",
+    "eslint": "^7.26.0",
+    "eslint-config-standard": "^16.0.2",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.3.1",
+    "jest": "^26.6.3"
+  },
+  "dependencies": {
+    "typescript": "^4.2.4"
+  }
+}
