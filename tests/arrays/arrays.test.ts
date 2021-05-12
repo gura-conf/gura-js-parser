@@ -36,11 +36,11 @@ const expected = {
 }
 
 test('array_normal', () => {
-  const content = getFileContentParsed(parentFolder, 'normal.ura')
-  expect(content).toEqual(expected)
+  const parsedData = getFileContentParsed(parentFolder, 'normal.ura')
+  expect(parsedData).toEqual(expected)
 })
 
 test('array_normal_with_comments', () => {
-  const content = getFileContentParsed(parentFolder, 'with_comments.ura')
-  expect(content).toEqual(expected)
+  const parsedData = getFileContentParsed(parentFolder, 'with_comments.ura')
+  expect(parsedData).toEqual(expected)
 })
