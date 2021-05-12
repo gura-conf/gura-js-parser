@@ -6,7 +6,8 @@ module.exports = {
     jest: true
   },
   extends: [
-    'standard'
+    'standard',
+    'standard-jsdoc/ts'
   ],
   parser: '@typescript-eslint/parser',
   parserOptions: {
