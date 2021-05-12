@@ -85,7 +85,9 @@ test('parse', () => {
 /** Test NaNs cases as they are an exceptional case. */
 test('parse_nan', () => {
   const parsedData = getFileContentParsed(parentFolder, 'nan.ura')
-  Object.values(parsedData).forEach((value) => {
+  const values = Object.values(parsedData)
+  expect(values).toBeGreaterThan(0)
+  values.forEach((value) => {
     expect(value).toBeNaN()
   })
 })
@@ -103,7 +105,9 @@ test('dump_nan', () => {
   const parsedData = getFileContentParsed(parentFolder, 'nan.ura')
   const stringData = dumps(parsedData)
   const newParsedData = loads(stringData)
-  Object.values(newParsedData).forEach((value) => {
+  const values = Object.values(newParsedData)
+  expect(values).toBeGreaterThan(0)
+  values.forEach((value) => {
     expect(value).toBeNaN()
   })
 })

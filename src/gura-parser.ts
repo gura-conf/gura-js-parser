@@ -1,3 +1,12 @@
+/** Raises when a variable is not defined. */
+class VariableNotDefinedError extends Error {
+  constructor (message?: string) {
+    super(message)
+    Object.setPrototypeOf(this, new.target.prototype) // Restore prototype chain
+    this.name = VariableNotDefinedError.name // stack traces display correctly now
+  }
+}
+
 /**
  * Parses a text in Gura format.
  * TODO: rename "loads" to "parse".
@@ -21,4 +30,4 @@ const dumps = (data: Object): string => {
   return ''
 }
 
-export { loads, dumps }
+export { loads, dumps, VariableNotDefinedError }

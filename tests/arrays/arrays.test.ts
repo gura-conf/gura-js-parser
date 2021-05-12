@@ -35,11 +35,13 @@ const expected = {
   ]
 }
 
+/** Tests all kind of arrays. */
 test('array_normal', () => {
   const parsedData = getFileContentParsed(parentFolder, 'normal.ura')
   expect(parsedData).toEqual(expected)
 })
 
+/** Tests all kind of arrays with comments between elements. */
 test('array_normal_with_comments', () => {
   const parsedData = getFileContentParsed(parentFolder, 'with_comments.ura')
   expect(parsedData).toEqual(expected)
