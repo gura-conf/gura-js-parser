@@ -1,4 +1,4 @@
-import { InvalidIndentationError } from '../../src/gura-parser'
+import { InvalidIndentationError } from '../../src/index'
 import { getFileContentParsed } from '../utils'
 
 const parentFolder = 'indentation'

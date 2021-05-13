@@ -7,6 +7,15 @@ class VariableNotDefinedError extends Error {
   }
 }
 
+/** Raises when a variable is defined more than once. */
+class DuplicatedVariableError extends Error {
+  constructor (message?: string) {
+    super(message)
+    Object.setPrototypeOf(this, new.target.prototype) // Restore prototype chain
+    this.name = DuplicatedVariableError.name // stack traces display correctly now
+  }
+}
+
 /** Raises when indentation is invalid. */
 class InvalidIndentationError extends Error {
   constructor (message?: string) {
@@ -39,4 +48,4 @@ const dumps = (data: Object): string => {
   return ''
 }
 
-export { loads, dumps, VariableNotDefinedError, InvalidIndentationError }
+export { loads, dumps, VariableNotDefinedError, DuplicatedVariableError, InvalidIndentationError }

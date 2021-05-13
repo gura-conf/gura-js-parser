@@ -1,1 +1,1 @@
-export { loads, dumps, VariableNotDefinedError } from './gura-parser'
+export { loads, dumps, VariableNotDefinedError, DuplicatedVariableError, InvalidIndentationError } from './gura-parser'
