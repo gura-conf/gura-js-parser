@@ -2,8 +2,8 @@
 class VariableNotDefinedError extends Error {
   constructor (message?: string) {
     super(message)
-    Object.setPrototypeOf(this, new.target.prototype) // Restore prototype chain
-    this.name = VariableNotDefinedError.name // stack traces display correctly now
+    Object.setPrototypeOf(this, new.target.prototype)
+    this.name = VariableNotDefinedError.name
   }
 }
 
@@ -11,8 +11,8 @@ class VariableNotDefinedError extends Error {
 class DuplicatedVariableError extends Error {
   constructor (message?: string) {
     super(message)
-    Object.setPrototypeOf(this, new.target.prototype) // Restore prototype chain
-    this.name = DuplicatedVariableError.name // stack traces display correctly now
+    Object.setPrototypeOf(this, new.target.prototype)
+    this.name = DuplicatedVariableError.name
   }
 }
 
@@ -20,8 +20,8 @@ class DuplicatedVariableError extends Error {
 class InvalidIndentationError extends Error {
   constructor (message?: string) {
     super(message)
-    Object.setPrototypeOf(this, new.target.prototype) // Restore prototype chain
-    this.name = InvalidIndentationError.name // stack traces display correctly now
+    Object.setPrototypeOf(this, new.target.prototype)
+    this.name = InvalidIndentationError.name
   }
 }
 
@@ -29,8 +29,8 @@ class InvalidIndentationError extends Error {
 class FileNotFoundError extends Error {
   constructor (message?: string) {
     super(message)
-    Object.setPrototypeOf(this, new.target.prototype) // Restore prototype chain
-    this.name = FileNotFoundError.name // stack traces display correctly now
+    Object.setPrototypeOf(this, new.target.prototype)
+    this.name = FileNotFoundError.name
   }
 }
 
@@ -38,8 +38,8 @@ class FileNotFoundError extends Error {
 class DuplicatedKeyError extends Error {
   constructor (message?: string) {
     super(message)
-    Object.setPrototypeOf(this, new.target.prototype) // Restore prototype chain
-    this.name = DuplicatedKeyError.name // stack traces display correctly now
+    Object.setPrototypeOf(this, new.target.prototype)
+    this.name = DuplicatedKeyError.name
   }
 }
 
@@ -47,8 +47,8 @@ class DuplicatedKeyError extends Error {
 class DuplicatedImportError extends Error {
   constructor (message?: string) {
     super(message)
-    Object.setPrototypeOf(this, new.target.prototype) // Restore prototype chain
-    this.name = DuplicatedImportError.name // stack traces display correctly now
+    Object.setPrototypeOf(this, new.target.prototype)
+    this.name = DuplicatedImportError.name
   }
 }
 
