@@ -25,6 +25,33 @@ class InvalidIndentationError extends Error {
   }
 }
 
+/** Raises when file to be parsed does not exist. */
+class FileNotFoundError extends Error {
+  constructor (message?: string) {
+    super(message)
+    Object.setPrototypeOf(this, new.target.prototype) // Restore prototype chain
+    this.name = FileNotFoundError.name // stack traces display correctly now
+  }
+}
+
+/** Raises when a key is defined more than once. */
+class DuplicatedKeyError extends Error {
+  constructor (message?: string) {
+    super(message)
+    Object.setPrototypeOf(this, new.target.prototype) // Restore prototype chain
+    this.name = DuplicatedKeyError.name // stack traces display correctly now
+  }
+}
+
+/** Raises when a file is imported more than once. */
+class DuplicatedImportError extends Error {
+  constructor (message?: string) {
+    super(message)
+    Object.setPrototypeOf(this, new.target.prototype) // Restore prototype chain
+    this.name = DuplicatedImportError.name // stack traces display correctly now
+  }
+}
+
 /**
  * Parses a text in Gura format.
  * TODO: rename "loads" to "parse".
@@ -48,4 +75,13 @@ const dumps = (data: Object): string => {
   return ''
 }
 
-export { loads, dumps, VariableNotDefinedError, DuplicatedVariableError, InvalidIndentationError }
+export {
+  loads,
+  dumps,
+  VariableNotDefinedError,
+  DuplicatedVariableError,
+  InvalidIndentationError,
+  FileNotFoundError,
+  DuplicatedKeyError,
+  DuplicatedImportError
+}
