@@ -30,10 +30,10 @@ type Rule = () => any
 /**
  * Base parser.
  */
-export class Parser {
-  private text: string
-  private pos: number
-  private line: number
+class Parser {
+  protected text: string
+  protected pos: number
+  protected line: number
   private len: number
   private cache: {[key: string]: string[]}
 
@@ -256,3 +256,5 @@ export class Parser {
     }
   }
 }
+
+export { Parser, ParseError }
