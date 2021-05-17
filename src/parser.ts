@@ -34,7 +34,7 @@ class Parser {
   protected text: string
   protected pos: number
   protected line: number
-  private len: number
+  protected len: number
   private cache: {[key: string]: string[]}
 
   constructor () {
@@ -220,7 +220,7 @@ class Parser {
    * @param chars - Chars to match. If it is null, it will return the next char in text.
    * @returns Char if matched, null otherwise.
    */
-  maybe_char (chars: string | null = null): string | null {
+  maybeChar (chars: string | null = null): string | null {
     try {
       return this.char(chars)
     } catch {
@@ -234,7 +234,7 @@ class Parser {
    * @param rules - Rules to match.
    * @returns Rule result if matched, null otherwise.
    */
-  maybe_match (rules: Rule[]): any | null {
+  maybeMatch (rules: Rule[]): any | null {
     try {
       return this.match(rules)
     } catch {
@@ -248,7 +248,7 @@ class Parser {
    * @param keywords - Keywords to match.
    * @returns Keyword if matched, null otherwise.
    */
-  maybe_keyword (keywords: string[]): string | null {
+  maybeKeyword (keywords: string[]): string | null {
     try {
       return this.keyword(keywords)
     } catch {

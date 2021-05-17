@@ -1,6 +1,6 @@
 export {
-  loads,
-  dumps,
+  parse,
+  dump,
   VariableNotDefinedError,
   DuplicatedVariableError,
   InvalidIndentationError,

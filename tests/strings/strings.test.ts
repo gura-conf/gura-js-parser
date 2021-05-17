@@ -1,5 +1,5 @@
 import { getFileContentParsed } from '../utils'
-import { loads, VariableNotDefinedError } from '../../src/index'
+import { parse, VariableNotDefinedError } from '../../src/index'
 
 const parentFolder = 'strings'
 
@@ -70,7 +70,7 @@ test('string_basic_multiline', () => {
 test('string_errors', () => {
   const timeNs = process.hrtime()[1]
   expect(() => {
-    loads(`test: "$false_var_${timeNs}"`)
+    parse(`test: "$false_var_${timeNs}"`)
   }).toThrow(VariableNotDefinedError)
 })
 

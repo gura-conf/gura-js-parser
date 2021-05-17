@@ -1,6 +1,6 @@
 import path from 'path'
 import { readFileSync } from 'fs'
-import { loads } from '../src/gura-parser'
+import { parse } from '../src/gura-parser'
 
 /**
  * Gets the content of a specific file parsed.
@@ -11,7 +11,7 @@ import { loads } from '../src/gura-parser'
  */
 const getFileContentParsed = (parentFolder: string, filePath: string): Object => {
   const fullPath = path.join('tests', parentFolder, 'tests-files', filePath)
-  return loads(readFileSync(fullPath, 'utf-8'))
+  return parse(readFileSync(fullPath, 'utf-8'))
 }
 
 export { getFileContentParsed }

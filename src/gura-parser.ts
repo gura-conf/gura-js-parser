@@ -1,3 +1,4 @@
+import path from 'path'
 import { Parser, ParseError } from './parser'
 
 /** Raises when a variable is not defined. */
@@ -54,14 +55,12 @@ class DuplicatedImportError extends Error {
   }
 }
 
-
 /* ++++++++++++++++++++ PARSER ++++++++++++++++++++ */
-
 
 // Number chars
 const BASIC_NUMBERS_CHARS = '0-9'
 const HEX_OCT_BIN = 'A-Fa-fxob'
-const INF_AND_NAN = 'in'  // The rest of the chars are defined in hex_oct_bin
+const INF_AND_NAN = 'in' // The rest of the chars are defined in hex_oct_bin
 // IMPORTANT: '-' char must be last, otherwise it will be interpreted as a range
 const ACCEPTABLE_NUMBER_CHARS = BASIC_NUMBERS_CHARS + HEX_OCT_BIN + INF_AND_NAN + 'Ee+._-'
 
@@ -70,14 +69,14 @@ const KEY_ACCEPTABLE_CHARS = '0-9A-Za-z_-'
 
 // Special characters to be escaped
 const ESCAPE_SEQUENCES = {
-  'b': '\b',
-  'f': '\f',
-  'n': '\n',
-  'r': '\r',
-  't': '\t',
+  b: '\b',
+  f: '\f',
+  n: '\n',
+  r: '\r',
+  t: '\t',
   '"': '"',
   '\\': '\\',
-  '$': '$'
+  $: '$'
 }
 
 /* Data types to be returned by match expression methods */
@@ -92,25 +91,27 @@ enum MatchResultType {
 
 /* Match expression method's result */
 interface MatchResult {
-  result_type: MatchResultType
+  resultType: MatchResultType
   value?: any
 }
 
 type PrimitiveType = null | boolean | number | string
 
+type BlankDescription = 'tabs' | 'whitespace'
+
 class GuraParser extends Parser {
   private variables: Map<string, any>
-  private indent_char: string | null
-  private indentation_levels: number[]
-  private imported_files: Set<string>
+  private indentChar: string | null
+  private indentationLevels: number[]
+  private importedFiles: Set<string>
 
   constructor () {
     super()
 
     this.variables = new Map()
-    this.indent_char = null
-    this.indentation_levels = []
-    this.imported_files = new Set()
+    this.indentChar = null
+    this.indentationLevels = []
+    this.importedFiles = new Set()
   }
 
   /**
@@ -120,30 +121,30 @@ class GuraParser extends Parser {
    * @throws ParseError if the syntax of text is invalid.
    * @returns Object with all the parsed values.
    */
-  loads (text: string): Object {
-    this.restart_params(text)
-    result = this.start()
-    this.assert_end()
+  load (text: string): Object {
+    this.restartParams(text)
+    const result = this.start()
+    this.assertEnd()
     return result !== null ? result : {}
   }
 
   /**
    * Sets the params to start parsing from a specific text.
    *
-   * @param text - Text to set as the internal text to be parsed
+   * @param text - Text to set as the internal text to be parsed.
    */
-  private restart_params(text: string) {
+  private restartParams (text: string) {
     this.text = text
     this.pos = -1
     this.line = 0
-    this.len = len(text) - 1
+    this.len = text.length - 1
   }
 
   /**
    * Matches with a new line.
    */
-  new_line() {
-    res = this.char('\f\v\r\n')
+  newLine () {
+    const res = this.char('\f\v\r\n')
     if (res !== null) {
       this.line += 1
     }
@@ -151,13 +152,13 @@ class GuraParser extends Parser {
 
   /**
    * Matches with a comment.
-   * 
-   * @returns MatchResult indicating the presence of a comment
+   *
+   * @returns MatchResult indicating the presence of a comment.
    */
-  comment(): MatchResult {
-    this.keyword('#')
+  comment (): MatchResult {
+    this.keyword(['#'])
     while (this.pos < this.len) {
-      char = this.text[this.pos + 1]
+      const char = this.text[this.pos + 1]
       this.pos += 1
       if ('\f\v\r\n'.includes(char)) {
         this.line += 1
@@ -165,56 +166,55 @@ class GuraParser extends Parser {
       }
     }
 
-    return { type: MatchResultType.COMMENT }
+    return { resultType: MatchResultType.COMMENT }
   }
-  
+
   /**
    * Matches with white spaces taking into consideration indentation levels.
    *
-   * @returns Indentation level
+   * @returns Indentation level.
    */
-  ws_with_indentation(): number {
-    let current_indentation_level = 0
-    
+  wsWithIndentation (): number {
+    let currentIndentationLevel = 0
+
     while (this.pos < this.len) {
-      blank = this.maybe_keyword(' ', '\t')
-      
+      const blank = this.maybeKeyword([' ', '\t'])
+
       if (blank === null) {
         // If it is not a blank or new line, returns from the method
         break
       }
 
       // If it is the first case of indentation stores the indentation char
-      if (this.indent_char !== null) {
+      if (this.indentChar !== null) {
         // If user uses different kind of indentation raises a parsing error
-        if (blank != this.indent_char) {
-          this.raise_indentation_char_error()
+        if (blank !== this.indentChar) {
+          this.raiseIndentationCharError()
         }
       } else {
         // From now on this character will be used to indicate the indentation
-        this.indent_char = blank
+        this.indentChar = blank
       }
-      current_indentation_level += 1
+      currentIndentationLevel += 1
     }
-    
-    
-    return current_indentation_level
+
+    return currentIndentationLevel
   }
 
   /**
    * Matches white spaces (blanks and tabs).
    */
-  ws() {
-    while (this.maybe_keyword(' ', '\t') !== null) {
+  ws () {
+    while (this.maybeKeyword([' ', '\t']) !== null) {
       continue
     }
   }
-  
+
   /**
    * Consumes all the whitespaces and new lines.
    */
-  eat_ws_and_new_lines() {
-    while (this.maybe_char(' \f\v\r\n\t')) {
+  private eatWsAndNewLines () {
+    while (this.maybeChar(' \f\v\r\n\t')) {
       continue
     }
   }
@@ -224,156 +224,158 @@ class GuraParser extends Parser {
    *
    * @throws ParseError as described in method description.
    */
-  private raise_indentation_char_error() {
-    if (this.indent_char === '\t') {
-      const good_char = 'tabs'
-      const received_char = 'whitespace'
+  private raiseIndentationCharError () {
+    let goodChar: BlankDescription
+    let receivedChar: BlankDescription
+    if (this.indentChar === '\t') {
+      goodChar = 'tabs'
+      receivedChar = 'whitespace'
     } else {
-      good_char = 'whitespace'
-      received_char = 'tabs'
+      goodChar = 'whitespace'
+      receivedChar = 'tabs'
     }
 
-    throw new InvalidIndentationError(`Wrong indentation character! Using ${good_char} but received ${received_char}`)
+    throw new InvalidIndentationError(`Wrong indentation character! Using ${goodChar} but received ${receivedChar}`)
   }
 
   /**
    * Gets final text taking in consideration imports in original text.
    *
-   * @param original_text - Text to be parsed.
-   * @param parent_dir_path - Parent directory to keep relative paths reference.
-   * @param imported_files - Set with imported files to check if any was imported more than once.
-   * @returns Final text with imported files' text on it
+   * @param originalText - Text to be parsed.
+   * @param parentDirPath - Parent directory to keep relative paths reference.
+   * @param importedFiles - Set with imported files to check if any was imported more than once.
+   * @returns Final text with imported files' text on it.
    */
-  get_text_with_imports(
-    original_text: string,
-    parent_dir_path: string,
-    imported_files: Set[string]
+  private getTextWithImports (
+    originalText: string,
+    parentDirPath: string,
+    importedFiles: Set<string>
   ): [string, Set<string>] {
-    this.restart_params(original_text)
-    imported_files = this.__compute_imports(parent_dir_path, imported_files)
-    return this.text, imported_files
+    this.restartParams(originalText)
+    importedFiles = this.computeImports(parentDirPath, importedFiles)
+    return [this.text, importedFiles]
   }
 
   /**
    * Matches import sentence.
-   * @returns MatchResult with file name of imported file
+   *
+   * @returns MatchResult with file name of imported file.
    */
-  gura_import(): MatchResult {
-    this.keyword('import')
-    this.match('ws')
-    const file_to_import = this.match('quoted_string_with_var')
-    this.match('ws')
-    this.maybe_match('new_line')
-    return { type: MatchResultType.IMPORT, value: file_to_import }
+  guraImport (): MatchResult {
+    this.keyword(['import'])
+    this.match([this.ws])
+    const fileToImport = this.match([this.quotedStringWithVar])
+    this.match([this.ws])
+    this.maybeMatch([this.newLine])
+    return { resultType: MatchResultType.IMPORT, value: fileToImport }
   }
-  
+
   /**
    * Matches with a quoted string(with a single quotation mark) taking into consideration a variable inside it.
    * There is no special character escaping here.
    *
-   * @returns Matched string
+   * @returns Matched string.
    */
-  quoted_string_with_var(): string {
-    const quote = this.keyword('"')
+  quotedStringWithVar (): string {
+    const quote = this.keyword(['"'])
     const chars: string[] = []
-    
+
     while (true) {
-      char = this.char()
-    
+      const char = this.char()
+
       if (char === quote) {
         break
       }
-    
+
       // Computes variables values in string
       if (char === '$') {
-        var_name = this.__get_var_name()
-        chars.append(this.__get_variable_value(var_name))
+        const varName = this.getVarName()
+        chars.push(this.getVariableValue(varName))
       } else {
-        chars.append(char)
+        chars.push(char)
       }
     }
-    
+
     return chars.join('')
   }
 
   /**
    * Gets a variable name char by char.
    *
-   * @returns Variable name
+   * @returns Variable name.
    */
-  private __get_var_name(): string {
-    const var_name = ''
-    const var_name_char = this.maybe_char(KEY_ACCEPTABLE_CHARS)
-    while (var_name_char !== null) {
-      var_name += var_name_char
-      var_name_char = this.maybe_char(KEY_ACCEPTABLE_CHARS)
+  private getVarName (): string {
+    let varName = ''
+    let varNameChar = this.maybeChar(KEY_ACCEPTABLE_CHARS)
+    while (varNameChar !== null) {
+      varName += varNameChar
+      varNameChar = this.maybeChar(KEY_ACCEPTABLE_CHARS)
     }
 
-    return var_name
+    return varName
   }
 
   /**
    * Computes all the import sentences in Gura file taking into consideration relative paths to imported files.
    *
-   * @param parent_dir_path - Current parent directory path to join with imported files.
-   * @param imported_files - Set with already imported files to raise an error in case of importing the same file
+   * @param parentDirPath - Current parent directory path to join with imported files.
+   * @param importedFiles - Set with already imported files to raise an error in case of importing the same file
     more than once.
    * @returns Set with imported files after all the imports to reuse in the importation process of the imported
     Gura files.
    */
-  private __compute_imports(parent_dir_path: string | null, imported_files: Set<string>): Set<string> {
-    const files_to_import: List[Tuple[string, string]] = []
-    
+  private computeImports (parentDirPath: string | null, importedFiles: Set<string>): Set<string> {
+    const filesToImport: [string, string][] = []
+
     // First, consumes all the import sentences to replace all of them
     while (this.pos < this.len) {
-      const match_result: MatchResult = this.maybe_match('gura_import', 'variable', 'useless_line')
-      if (match_result === null) {
+      const matchResult: MatchResult = this.maybeMatch([this.guraImport, this.variable, this.uselessLine])
+      if (matchResult === null) {
         break
       }
-      
+
       // Checks, it could be a comment
-      if (match_result.result_type == MatchResultType.IMPORT) {
-        files_to_import.append((match_result.value, parent_dir_path))
+      if (matchResult.resultType === MatchResultType.IMPORT) {
+        filesToImport.push([matchResult.value, parentDirPath])
       }
     }
-    
-    if (files_to_import.length > 0) {
-        let final_content = ''
-        files_to_import.forEach(([file_to_import, origin_file_path]) => {
 
-          // Gets the final file path considering parent directory
-          if (origin_file_path !== null) {
-            file_to_import = os.path.join(origin_file_path, file_to_import)
-          }
+    if (filesToImport.length > 0) {
+      const finalContent = ''
+      filesToImport.forEach(([fileToImport, originFilePath]) => {
+        // Gets the final file path considering parent directory
+        if (originFilePath !== null) {
+          fileToImport = path.join(originFilePath, fileToImport)
+        }
 
-          // Files can be imported only once.This prevents circular reference
-          if (imported_files.includes(file_to_import)) {
-            throw new DuplicatedImportError(`The file ${file_to_import} has been already imported`)
-          }
+        // Files can be imported only once.This prevents circular reference
+        if (importedFiles.has(fileToImport)) {
+          throw new DuplicatedImportError(`The file ${fileToImport} has been already imported`)
+        }
 
-          // FIXME: when it's finished the rest of the files
-          // with open(file_to_import, 'r') as f {
-          //   // Gets content considering imports
-          //   content = f.read()
-          //   aux_parser = GuraParser()
-          //   parent_dir_path = os.path.dirname(file_to_import)
-          //   content_with_import, imported_files = aux_parser.get_text_with_imports(
-          //   content,
-          //   parent_dir_path,
-          //   imported_files
-          //   )
-          //   final_content += content_with_import + '\n'
-          //   imported_files.add(file_to_import)
+        // FIXME: when it's finished the rest of the files
+        // with open(fileToImport, 'r') as f {
+        //   // Gets content considering imports
+        //   content = f.read()
+        //   aux_parser = GuraParser()
+        //   parentDirPath = os.path.dirname(fileToImport)
+        //   content_with_import, importedFiles = aux_parser.get_text_with_imports(
+        //   content,
+        //   parentDirPath,
+        //   importedFiles
+        //   )
+        //   final_content += content_with_import + '\n'
+        //   importedFiles.add(fileToImport)
 
-          //   this.imported_files.add(file_to_import)
-          // }
-        })
-      
+        //   this.importedFiles.add(fileToImport)
+        // }
+      })
+
       // Sets as new text
-      this.restart_params(final_content + this.text.substring(this.pos + 1))
+      this.restartParams(finalContent + this.text.substring(this.pos + 1))
     }
 
-    return imported_files
+    return importedFiles
   }
 
   /**
@@ -381,25 +383,25 @@ class GuraParser extends Parser {
    *
    * @returns Dict with all the extracted values from Gura string.
    */
-  start(): Object | null {
-    this.__compute_imports(parent_dir_path = null, imported_files = set())
-    const result: MatchResult | null = this.match('expression')
-    this.eat_ws_and_new_lines()
+  start (): Object | null {
+    this.computeImports(null, new Set())
+    const result: MatchResult | null = this.match([this.expression])
+    this.eatWsAndNewLines()
     return result !== null ? result.value[0] : null
   }
 
   /**
    * Matches with any primitive or complex type.
    *
-   * @returns The corresponding matched value
+   * @returns The corresponding matched value.
    */
-  any_type(): any {
-    const result = this.maybe_match('primitive_type')
+  anyType (): any {
+    const result = this.maybeMatch([this.primitiveType])
     if (result !== null) {
       return result
     }
-    
-    return this.match('complex_type')
+
+    return this.match([this.complexType])
   }
 
   /**
@@ -407,9 +409,9 @@ class GuraParser extends Parser {
    *
    * @returns The corresponding matched value.
    */
-  primitive_type(): PrimitiveType  {
-    this.maybe_match('ws')
-    return this.match('null', 'boolean', 'basic_string', 'literal_string', 'number', 'variable_value')
+  primitiveType (): PrimitiveType {
+    this.maybeMatch([this.ws])
+    return this.match([this.null, this.boolean, this.basicString, this.literalString, this.number, this.variableValue])
   }
 
   /**
@@ -417,8 +419,8 @@ class GuraParser extends Parser {
    *
    * @returns List or Dict, depending the correct matching.
    */
-  complex_type(): [any[], Object] | null {
-    return this.match('list', 'expression')
+  complexType (): [any[], Object] | null {
+    return this.match([this.list, this.expression])
   }
 
   /**
@@ -428,27 +430,28 @@ class GuraParser extends Parser {
    * @throws VariableNotDefinedError if the variable is not defined in file nor environment.
    * @returns Variable value.
    */
-  private __get_variable_value(key: string): any | null {
-    if (this.variables.includes(key))
-      return this.variables[key]
-    
-    env_variable = os.getenv(key)
-    if (env_variable !== null) {
-      return env_variable
+  private getVariableValue (key: string): any | null {
+    if (this.variables.has(key)) {
+      return this.variables.get(key)
     }
-  
+
+    const envVariable = process.env[key]
+    if (envVariable !== undefined) {
+      return envVariable
+    }
+
     throw new VariableNotDefinedError(`Variable '${key}' is not defined in Gura nor as environment variable`)
   }
 
   /**
    * Matches with an already defined variable and gets its value.
-   * 
+   *
    * @returns Variable value.
    */
-  variable_value(): any {
-    this.keyword('$')
-    const key = this.match('unquoted_string')
-    return this.__get_variable_value(key)
+  variableValue (): PrimitiveType {
+    this.keyword(['$'])
+    const key = this.match([this.unquotedString])
+    return this.getVariableValue(key)
   }
 
   /**
@@ -457,19 +460,19 @@ class GuraParser extends Parser {
    * @throws DuplicatedVariableError if the current variable has been already defined.
    * @returns Match result indicating that a variable has been added.
    */
-  variable(): MatchResult {
-    this.keyword('$')
-    const key = this.match('key')
-    this.maybe_match('ws')
-    const value = this.match('any_type')
-    
-    if (this.variables.includes(key)) {
+  variable (): MatchResult {
+    this.keyword(['$'])
+    const key = this.match([this.key])
+    this.maybeMatch([this.ws])
+    const value = this.match([this.anyType])
+
+    if (this.variables.has(key)) {
       throw new DuplicatedVariableError(`Variable '${key}' has been already declared`)
     }
-    
+
     // Store as variable
-    this.variables[key] = value
-    return { result_type: MatchResultType.VARIABLE }
+    this.variables.set(key, value)
+    return { resultType: MatchResultType.VARIABLE }
   }
 
   /**
@@ -477,41 +480,41 @@ class GuraParser extends Parser {
    *
    * @returns Matched list.
    */
-  list(): any[] {
+  list (): any[] {
     const result = []
-    
-    this.maybe_match('ws')
-    this.keyword('[')
+
+    this.maybeMatch([this.ws])
+    this.keyword(['['])
     while (true) {
-      this.maybe_match('ws')
-      this.maybe_match('new_line')
-      
+      this.maybeMatch([this.ws])
+      this.maybeMatch([this.newLine])
+
       // Discards useless lines between elements of array
-      const useless_line = this.maybe_match('useless_line')
-      if (useless_line !== null) {
+      const uselessLine = this.maybeMatch([this.uselessLine])
+      if (uselessLine !== null) {
         continue
       }
-      
-      const item = this.maybe_match('any_type')
+
+      let item = this.maybeMatch([this.anyType])
       if (item === null) {
         break
       }
-      
-      if (typeof item === MatchResult && item.result_type == MatchResultType.EXPRESSION) {
+
+      if (item?.result_type === MatchResultType.EXPRESSION) {
         item = item.value[0]
       }
 
-      result.append(item)
-      
-      this.maybe_match('ws')
-      if (!this.maybe_keyword(',')) {
+      result.push(item)
+
+      this.maybeMatch([this.ws])
+      if (!this.maybeKeyword([','])) {
         break
       }
     }
-    
-    this.maybe_match('ws')
-    this.maybe_match('new_line')
-    this.keyword(']')
+
+    this.maybeMatch([this.ws])
+    this.maybeMatch([this.newLine])
+    this.keyword([']'])
     return result
   }
 
@@ -521,41 +524,41 @@ class GuraParser extends Parser {
    * @throws ParseError if the line contains valid data.
    * @returns MatchResult indicating the presence of a useless line.
    */
-  useless_line(): MatchResult {
-    this.match('ws')
-    const comment = this.maybe_match('comment')
-    const initial_line = this.line
-    this.maybe_match('new_line')
-    const is_new_line = (this.line - initial_line) == 1
-    
-    if (comment === null && !is_new_line) {
+  uselessLine (): MatchResult {
+    this.match([this.ws])
+    const comment = this.maybeMatch([this.comment])
+    const initialLine = this.line
+    this.maybeMatch([this.newLine])
+    const isNewLine = (this.line - initialLine) === 1
+
+    if (comment === null && !isNewLine) {
       throw new ParseError(
         this.pos + 1,
         this.line,
         'It is a valid line'
       )
     }
-    
-    return MatchResult(MatchResultType.USELESS_LINE)
+
+    return { resultType: MatchResultType.USELESS_LINE }
   }
-  
+
   /**
    * Match any Gura expression.
    *
    * @throws DuplicatedKeyError if any of the defined key was declared more than once.
    * @returns Object with Gura string data.
    */
-  expression(): MatchResult {
+  expression (): MatchResult {
     const result = {}
-    const indentation_level = 0
+    let indentationLevel = 0
     while (this.pos < this.len) {
-      const item: MatchResult | null = this.maybe_match('variable', 'pair', 'useless_line')
-    
+      const item: MatchResult | null = this.maybeMatch([this.variable, this.pair, this.uselessLine])
+
       if (item === null) {
         break
       }
 
-      if (item.result_type == MatchResultType.PAIR) {
+      if (item.resultType === MatchResultType.PAIR) {
         // It is a key / value pair
         const [key, value, indentation] = item.value
         if (result[key] !== undefined) {
@@ -563,89 +566,88 @@ class GuraParser extends Parser {
         }
 
         result[key] = value
-        indentation_level = indentation
+        indentationLevel = indentation
       }
-      
-      if (this.maybe_keyword(']', ',') !== null) {
+
+      if (this.maybeKeyword([']', ',']) !== null) {
         // Breaks if it is the end of a list
-        this.__remove_last_indentation_level()
+        this.removeLastIndentationLevel()
         this.pos -= 1
         break
       }
     }
-    
+
     return Object.keys(result).length > 0
-      ? { result_type: MatchResultType.EXPRESSION, value: (result, indentation_level) }
+      ? { resultType: MatchResultType.EXPRESSION, value: [result, indentationLevel] }
       : null
   }
 
   /**
    * Removes, if exists, the last indentation level.
    */
-  private __remove_last_indentation_level() {
-    if (this.indentation_levels.length > 0) {
-      this.indentation_levels.pop()
+  private removeLastIndentationLevel () {
+    if (this.indentationLevels.length > 0) {
+      this.indentationLevels.pop()
     }
   }
-  
+
   /**
    * Matches with a key.A key is an unquoted string followed by a colon (:).
    *
    * @throws ParseError if key is not a valid string.
    * @returns Matched key.
    */
-  key(): string {
-    const key = this.match('unquoted_string')
-    
+  key (): string {
+    const key = this.match([this.unquotedString])
+
     if (typeof key !== 'string') {
       throw new ParseError(
         this.pos + 1,
         this.line,
-        `Expected string but got "${this.text.substring(this.pos + 1)}"`, 
+        `Expected string but got "${this.text.substring(this.pos + 1)}"`
       )
     }
-    
-    this.keyword(':')
+
+    this.keyword([':'])
     return key
   }
-  
+
   /**
    * Matches with a key - value pair taking into consideration the indentation levels.
    *
-   * @returns Matched key - value pair.null if the indentation level is lower than the last one(to indicate the ending of a parent object)
+   * @returns Matched key - value pair.null if the indentation level is lower than the last one(to indicate the ending of a parent object).
    */
-  pair(): MatchResult | null {
-    const pos_before_pair = this.pos
-    const current_indentation_level = this.maybe_match('ws_with_indentation')
-    
-    const key = this.match('key')
-    this.maybe_match('ws')
-    this.maybe_match('new_line')
-    
+  pair (): MatchResult | null {
+    const posBeforePair = this.pos
+    const currentIndentationLevel = this.maybeMatch([this.wsWithIndentation])
+
+    const key = this.match([this.key])
+    this.maybeMatch([this.ws])
+    this.maybeMatch([this.newLine])
+
     // Check indentation
-    const last_indentation_block = this.__get_last_indentation_level()
-    
+    const lastIndentationBlock = this.getLastIndentationLevel()
+
     // Check if indentation is divisible by 2
-    if (current_indentation_level % 2 != 0) {
+    if (currentIndentationLevel % 2 !== 0) {
       throw new InvalidIndentationError('Indentation block must be divisible by 2')
     }
-    
-    if (last_indentation_block === null || current_indentation_level > last_indentation_block) {
-      this.indentation_levels.push(current_indentation_level)
+
+    if (lastIndentationBlock === null || currentIndentationLevel > lastIndentationBlock) {
+      this.indentationLevels.push(currentIndentationLevel)
     } else {
-      if (current_indentation_level < last_indentation_block) {
-        this.__remove_last_indentation_level()
+      if (currentIndentationLevel < lastIndentationBlock) {
+        this.removeLastIndentationLevel()
 
         // As the indentation was consumed, it is needed to return to line beginning to get the indentation level
         // again in the previous matching.Otherwise, the other match would get indentation level = 0
-        this.pos = pos_before_pair
-        return null  // This breaks the parent loop
+        this.pos = posBeforePair
+        return null // This breaks the parent loop
       }
     }
-    
-    
+
     // If it === null then is an empty expression, and therefore invalid
-    let value = this.match('any_type')
+    let value = this.match([this.anyType])
     if (value === null) {
       throw new ParseError(
         this.pos + 1,
@@ -653,38 +655,37 @@ class GuraParser extends Parser {
         'Invalid pair'
       )
     }
-    
-    if (value?.result_type == MatchResultType.EXPRESSION) {
-      const dict_values, indentation_level = value.value
-      if (indentation_level == current_indentation_level) {
+
+    if (value?.result_type === MatchResultType.EXPRESSION) {
+      const [objectValues, indentationLevel] = value.value
+      if (indentationLevel === currentIndentationLevel) {
         throw new InvalidIndentationError(`Wrong level for parent with key ${key}`)
       }
-      
-      value = dict_values
+
+      value = objectValues
     }
-    
-    
-    this.maybe_match('new_line')
-    
-    return { result_type: MatchResultType.PAIR, value: [key, value, current_indentation_level] }
+
+    this.maybeMatch([this.newLine])
+
+    return { resultType: MatchResultType.PAIR, value: [key, value, currentIndentationLevel] }
   }
-  
+
   /**
    * Gets the last indentation level or null in case it does not exist.
    *
-   * @returns Last indentation level or null if it does not exist
+   * @returns Last indentation level or null if it does not exist.
    */
-  __get_last_indentation_level(): number | null {
-    return this.indentation_levels.length == 0 ? null : this.indentation_levels[this.indentation_levels.length - 1]
+  private getLastIndentationLevel (): number | null {
+    return this.indentationLevels.length === 0 ? null : this.indentationLevels[this.indentationLevels.length - 1]
   }
 
   /**
    * Consumes null keyword and return null.
    *
-   * @returns Null
+   * @returns Null.
    */
-  null(): null {
-    this.keyword('null')
+  null (): null {
+    this.keyword(['null'])
     return null
   }
 
@@ -693,7 +694,7 @@ class GuraParser extends Parser {
    *
    * @returns Matched boolean value.
    */
-  boolean(): boolean {
+  boolean (): boolean {
     return this.keyword(['true', 'false']) === 'true'
   }
 
@@ -702,18 +703,18 @@ class GuraParser extends Parser {
    *
    * @returns Parsed unquoted string.
    */
-  unquoted_string(): string {
+  unquotedString (): string {
     const chars = [this.char(KEY_ACCEPTABLE_CHARS)]
-    
+
     while (true) {
-      const char = this.maybe_char(KEY_ACCEPTABLE_CHARS)
+      const char = this.maybeChar(KEY_ACCEPTABLE_CHARS)
       if (char === null) {
         break
       }
 
       chars.push(char)
     }
-    
+
     return chars.join('').trimRight()
   }
 
@@ -723,32 +724,31 @@ class GuraParser extends Parser {
    * @throws ParseError if the extracted string is not a valid number.
    * @returns Returns an number or a float depending of type inference.
    */
-  number(): number {
-    let number_type: 'integer' | 'float' = 'integer'
-    
+  number (): number {
+    let numberType: 'integer' | 'float' = 'integer'
+
     const chars = [this.char(ACCEPTABLE_NUMBER_CHARS)]
-    
+
     while (true) {
-      const char = this.maybe_char(ACCEPTABLE_NUMBER_CHARS)
+      const char = this.maybeChar(ACCEPTABLE_NUMBER_CHARS)
       if (char === null) {
         break
       }
 
       if (['Ee.'].includes(char)) {
-        number_type = 'float'
+        numberType = 'float'
       }
-      
+
       chars.push(char)
-      
     }
-    
+
     const result = chars.join('').trimRight()
-    
+
     // Checks hexadecimal and octal format
     const prefix = result.substring(0, 2)
     if (['0x', '0o', '0b'].includes(prefix)) {
       let base: number
-      const without_prefix = result.substring(2)
+      const withoutPrefix = result.substring(2)
       switch (prefix) {
         case '0x':
           base = 16
@@ -760,22 +760,22 @@ class GuraParser extends Parser {
           base = 2
           break
       }
-      
-      return parseInt(without_prefix, base)
+
+      return parseInt(withoutPrefix, base)
     }
-    
+
     // Checks inf or NaN
-    const last_three_chars = result.substring(result.length - 3)
-    if (last_three_chars === 'inf') {
+    const lastThreeChars = result.substring(result.length - 3)
+    if (lastThreeChars === 'inf') {
       return Infinity
     } else {
-      if (last_three_chars === 'nan') {
+      if (lastThreeChars === 'nan') {
         return NaN
       }
     }
-    
+
     try {
-      if (number_type === 'integer') {
+      if (numberType === 'integer') {
         return parseInt(result)
       } else {
         return parseFloat(result)
@@ -794,42 +794,42 @@ class GuraParser extends Parser {
    *
    * @returns Matched string.
    */
-  basic_string(): string {
-    const quote = this.keyword('"""', '"')
-    
-    const is_multiline = quote == '"""'
-    
+  basicString (): string {
+    const quote = this.keyword(['"""', '"'])
+
+    const isMultiline = quote === '"""'
+
     // NOTE: A newline immediately following the opening delimiter will be trimmed.All other whitespace and
     // newline characters remain intact.
-    if (is_multiline) {
-      this.maybe_char('\n')
+    if (isMultiline) {
+      this.maybeChar('\n')
     }
-    
+
     const chars = []
 
     while (true) {
-      const closing_quote = this.maybe_keyword(quote)
-      if (closing_quote !== null) {
+      const closingQuote = this.maybeKeyword([quote])
+      if (closingQuote !== null) {
         break
       }
-      
+
       const char = this.char()
-      if (char == '\\') {
+      if (char === '\\') {
         const escape = this.char()
-      
+
         // Checks backslash followed by a newline to trim all whitespaces
-        if (is_multiline && escape === '\n') {
-          this.eat_ws_and_new_lines()
+        if (isMultiline && escape === '\n') {
+          this.eatWsAndNewLines()
         } else {
           // Supports Unicode of 16 and 32 bits representation
           if (escape === 'u' || escape === 'U') {
-            const num_chars_code_point = escape == 'u' ? 4 : 8
-            const code_point = []
-            for (let i =0; i < num_chars_code_point; i++) {
-              code_point.push(this.char('0-9a-fA-F'))
+            const numCharsCodePoint = escape === 'u' ? 4 : 8
+            const codePoint = []
+            for (let i = 0; i < numCharsCodePoint; i++) {
+              codePoint.push(this.char('0-9a-fA-F'))
             }
-            const hex_value = parseInt(code_point.join(''), 16)
-            const charValue = Buffer.alloc(hex_value).toString() // Converts from UNICODE to string
+            const hexValue = parseInt(codePoint.join(''), 16)
+            const charValue = Buffer.alloc(hexValue).toString() // Converts from UNICODE to string
             chars.push(charValue)
           } else {
             // Gets escaped char
@@ -838,116 +838,125 @@ class GuraParser extends Parser {
         }
       } else {
         // Computes variables values in string
-        if (char == '$') {
-          const var_name = this.__get_var_name()
-          chars.push(this.__get_variable_value(var_name))
+        if (char === '$') {
+          const varName = this.getVarName()
+          chars.push(this.getVariableValue(varName))
         } else {
           chars.push(char)
         }
       }
     }
-    
+
     return chars.join('')
+  }
+
+  /**
+   * Matches with a simple / multiline literal string.
+   *
+   * @returns Matched string.
+   */
+  literalString (): string {
+    const quote = this.keyword(["'''", "'"])
+
+    const isMultiline = quote === "'''"
+
+    // NOTE: A newline immediately following the opening delimiter will be trimmed.All other whitespace and
+    // newline characters remain intact.
+    if (isMultiline) {
+      this.maybeChar('\n')
+    }
+
+    const chars = []
+
+    while (true) {
+      const closingQuote = this.maybeKeyword([quote])
+      if (closingQuote !== null) {
+        break
+      }
+
+      const char = this.char()
+      chars.push(char)
+    }
+
+    return chars.join('')
+  }
+
+  /**
+   * Takes a value, check its type and returns its correct value.
+   *
+   * @param indentationLevel - Current indentation level to compute indentation in string.
+   * @param value - Value retrieved from dict to transform in string.
+   * @returns String representation of the received value.
+   */
+  private getValueForString (indentationLevel: number, value: any): string {
+    const valueType = typeof value
+    switch (valueType) {
+      case 'string':
+        return `"${value}"`
+      case 'number':
+        return value.toString()
+      case 'boolean':
+        return value ? 'true' : 'false'
+      case 'object':
+        // Checks if it is an array as typeof [] === 'object'
+        if (Array.isArray(value)) {
+          const list = value as any[]
+          const listValues = list.map((listElem) => this.getValueForString(indentationLevel, listElem))
+          return '[' + listValues.join(', ') + ']'
+        }
+
+        return '\n' + this.dump(value, indentationLevel + 1)
+    }
+
+    return ''
+  }
+
+  /**
+   * Generates a Gura string from a dictionary(aka.stringify).
+   *
+   * @param data - Object data to stringify.
+   * @param indentationLevel - Current indentation level.
+   * @returns String with the data in Gura format.
+   */
+  dump (data: Object, indentationLevel: number = 0): string {
+    let result = ''
+    Object.entries(data).forEach(([key, value]) => {
+      const indentation = ' '.repeat(indentationLevel * 4)
+      result += `${indentation}${key}: `
+      result += this.getValueForString(indentationLevel, value)
+      result += '\n'
+    })
+
+    return result
   }
 }
 
-
-def literal_string(): string:
-"""
-Matches with a simple / multiline literal string
-: return: Matched string
-"""
-quote = this.keyword("'''", "'")
-
-is_multiline = quote == "'''"
-
-        // NOTE: A newline immediately following the opening delimiter will be trimmed.All other whitespace and
-        // newline characters remain intact.
-if is_multiline:
-  this.maybe_char('\n')
-
-chars = []
-
-while True:
-  closing_quote = this.maybe_keyword(quote)
-if closing_quote !== null:
-break
-
-char = this.char()
-chars.append(char)
-
-return ''.join(chars)
-
-def __get_value_for_string(indentation_level, value): string:
-"""
-Takes a value, check its type and returns its correct value
-: param indentation_level: Current indentation level to compute indentation in string
-        : param value: Value retrieved from dict to transform in string
-        : return: String representation of the received value
-"""
-value_type = type(value)
-if value_type == string:
-  return f'"{value}"'
-if value_type in (number, float):
-  return string(value)
-if value_type == bool:
-  return 'true' if value is True else 'false'
-if value_type == dict:
-  return '\n' + this.dumps(value, indentation_level + 1)
-if value_type == list:
-  list_values = [
-    this.__get_value_for_string(indentation_level, list_elem)
-                for list_elem in value
-            ]
-return '[' + ', '.join(list_values) + ']'
-return ''
-
-def dumps(data: Dict, indentation_level: number = 0): string:
-"""
-Generates a Gura string from a dictionary(aka.stringify)
-        : param data: Dictionary data to stringify
-: param indentation_level: Current indentation level
-: return: String with the data in Gura format
-"""
-result = ''
-for key, value in data.items():
-  indentation = ' ' * (indentation_level * 4)
-result += f'{indentation}{key}: '
-result += this.__get_value_for_string(indentation_level, value)
-result += '\n'
-return result
-
-
 /* ++++++++++++++++++++ PARSER ++++++++++++++++++++ */
-
-
 
 /**
  * Parses a text in Gura format.
- * TODO: rename "loads" to "parse".
  *
  * @param text - Text to be parsed.
  * @throws ParseError if the syntax of text is invalid.
  * @returns Dict with all the parsed values.
  */
-const loads = (text: string): Object => {
-  return {}
+const parse = (text: string): Object => {
+  return new GuraParser().load(text)
 }
 
 /**
  * Generates a Gura string from a dictionary(aka.stringify).
- * TODO: rename "dumps" to "dump".
  *
  * @param data - Object to stringify.
  * @returns String with the data in Gura format.
  */
-const dumps = (data: Object): string => {
-  return ''
+const dump = (data: Object): string => {
+  return new GuraParser().dump(data)
 }
 
 export {
-  loads,
-  dumps,
+  parse,
+  dump,
   VariableNotDefinedError,
   DuplicatedVariableError,
   InvalidIndentationError,
