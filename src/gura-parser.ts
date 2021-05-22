@@ -112,6 +112,29 @@ class GuraParser extends Parser {
     this.indentChar = null
     this.indentationLevels = []
     this.importedFiles = new Set()
+
+    this.guraImport = this.guraImport.bind(this)
+    this.newLine = this.newLine.bind(this)
+    this.comment = this.comment.bind(this)
+    this.wsWithIndentation = this.wsWithIndentation.bind(this)
+    this.ws = this.ws.bind(this)
+    this.quotedStringWithVar = this.quotedStringWithVar.bind(this)
+    this.anyType = this.anyType.bind(this)
+    this.primitiveType = this.primitiveType.bind(this)
+    this.complexType = this.complexType.bind(this)
+    this.variableValue = this.variableValue.bind(this)
+    this.variable = this.variable.bind(this)
+    this.list = this.list.bind(this)
+    this.uselessLine = this.uselessLine.bind(this)
+    this.expression = this.expression.bind(this)
+    this.key = this.key.bind(this)
+    this.pair = this.pair.bind(this)
+    this.null = this.null.bind(this)
+    this.boolean = this.boolean.bind(this)
+    this.unquotedString = this.unquotedString.bind(this)
+    this.number = this.number.bind(this)
+    this.basicString = this.basicString.bind(this)
+    this.literalString = this.literalString.bind(this)
   }
 
   /**
@@ -121,7 +144,7 @@ class GuraParser extends Parser {
    * @throws ParseError if the syntax of text is invalid.
    * @returns Object with all the parsed values.
    */
-  load (text: string): Object {
+  parse (text: string): Object {
     this.restartParams(text)
     const result = this.start()
     this.assertEnd()
@@ -359,7 +382,7 @@ class GuraParser extends Parser {
         //   content = f.read()
         //   aux_parser = GuraParser()
         //   parentDirPath = os.path.dirname(fileToImport)
-        //   content_with_import, importedFiles = aux_parser.get_text_with_imports(
+        //   content_with_import, importedFiles = aux_parser.getTextWithImports(
         //   content,
         //   parentDirPath,
         //   importedFiles
@@ -500,7 +523,7 @@ class GuraParser extends Parser {
         break
       }
 
-      if (item?.result_type === MatchResultType.EXPRESSION) {
+      if (item?.resultType === MatchResultType.EXPRESSION) {
         item = item.value[0]
       }
 
@@ -656,7 +679,7 @@ class GuraParser extends Parser {
       )
     }
 
-    if (value?.result_type === MatchResultType.EXPRESSION) {
+    if (value?.resultType === MatchResultType.EXPRESSION) {
       const [objectValues, indentationLevel] = value.value
       if (indentationLevel === currentIndentationLevel) {
         throw new InvalidIndentationError(`Wrong level for parent with key ${key}`)
@@ -735,7 +758,7 @@ class GuraParser extends Parser {
         break
       }
 
-      if (['Ee.'].includes(char)) {
+      if ('Ee.'.includes(char)) {
         numberType = 'float'
       }
 
@@ -941,7 +964,7 @@ class GuraParser extends Parser {
  * @returns Dict with all the parsed values.
  */
 const parse = (text: string): Object => {
-  return new GuraParser().load(text)
+  return new GuraParser().parse(text)
 }
 
 /**

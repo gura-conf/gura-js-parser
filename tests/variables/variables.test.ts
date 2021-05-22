@@ -1,4 +1,4 @@
-import { DuplicatedVariableError, loads, VariableNotDefinedError } from '../../src/index'
+import { DuplicatedVariableError, parse, VariableNotDefinedError } from '../../src/index'
 import { getFileContentParsed } from '../utils'
 
 const parentFolder = 'variables'
@@ -24,14 +24,14 @@ test('variables_normal', () => {
 test('variables_with_error', () => {
   const timeNs = process.hrtime()[1]
   expect(() => {
-    loads(`test: $false_var_${timeNs}`)
+    parse(`test: $false_var_${timeNs}`)
   }).toThrow(VariableNotDefinedError)
 })
 
 /** Tests errors when a variable is defined more than once. */
 test('variables_with_error_duplicated', () => {
   expect(() => {
-    loads('$a_var: 14\n$a_var: 14')
+    parse('$a_var: 14\n$a_var: 14')
   }).toThrow(DuplicatedVariableError)
 })
 
@@ -43,7 +43,7 @@ test('env_vars', () => {
   process.env[envVarName] = envValue
 
   // Parses and tests
-  const parsedData = loads(`test: ${envVarName}`)
+  const parsedData = parse(`test: ${envVarName}`)
   expect(parsedData).toEqual({ test: envValue })
   process.env[envVarName] = undefined
 })

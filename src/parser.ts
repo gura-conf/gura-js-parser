@@ -112,7 +112,7 @@ class Parser {
       return nextChar
     }
 
-    this.splitCharRanges(chars).forEach((charRange) => {
+    for (const charRange of this.splitCharRanges(chars)) {
       if (charRange.length === 1) {
         if (nextChar === charRange) {
           this.pos += 1
@@ -124,7 +124,7 @@ class Parser {
           return nextChar
         }
       }
-    })
+    }
 
     const param = chars === null ? 'character' : `[${chars}]`
     throw new ParseError(
@@ -150,7 +150,7 @@ class Parser {
       )
     }
 
-    keywords.forEach((keyword) => {
+    for (const keyword of keywords) {
       const low = this.pos + 1
       const high = low + keyword.length
 
@@ -158,7 +158,7 @@ class Parser {
         this.pos += keyword.length
         return keyword
       }
-    })
+    }
 
     throw new ParseError(
       this.pos + 1,
@@ -180,7 +180,7 @@ class Parser {
     let lastException: Error | null = null
     let lastErrorRules = []
 
-    rules.forEach((rule) => {
+    for (const rule of rules) {
       const initialPos = this.pos
       try {
         return rule()
@@ -198,20 +198,23 @@ class Parser {
               lastErrorRules.push(rule)
             }
           }
+        } else {
+          // If it is not a ParseError, throws to stop parsing
+          throw ex
         }
       }
+    }
 
-      if (lastErrorRules.length === 1) {
-        throw lastException
-      } else {
-        lastErrorPos = Math.min(this.text.length - 1, lastErrorPos)
-        throw new ParseError(
-          lastErrorPos,
-          this.line,
-          `Expected ${lastErrorRules.join(',')} but got ${this.text[lastErrorPos]}`
-        )
-      }
-    })
+    if (lastErrorRules.length === 1) {
+      throw lastException
+    } else {
+      lastErrorPos = Math.min(this.text.length - 1, lastErrorPos)
+      throw new ParseError(
+        lastErrorPos,
+        this.line,
+        `Expected ${lastErrorRules.join(',')} but got ${this.text[lastErrorPos]}`
+      )
+    }
   }
 
   /**

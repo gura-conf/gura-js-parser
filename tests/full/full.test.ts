@@ -1,5 +1,5 @@
 import { getFileContentParsed } from '../utils'
-import { loads, dumps } from '../../src/index'
+import { parse, dump } from '../../src/index'
 
 const parentFolder = 'full'
 
@@ -95,16 +95,16 @@ test('parse_nan', () => {
 /** Tests dump method. */
 test('dump', () => {
   const parsedData = getFileContentParsed(parentFolder, 'full.ura')
-  const stringData = dumps(parsedData)
-  const newParsedData = loads(stringData)
+  const stringData = dump(parsedData)
+  const newParsedData = parse(stringData)
   expect(newParsedData).toEqual(expected)
 })
 
 /** Tests dump method with NaNs values. */
 test('dump_nan', () => {
   const parsedData = getFileContentParsed(parentFolder, 'nan.ura')
-  const stringData = dumps(parsedData)
-  const newParsedData = loads(stringData)
+  const stringData = dump(parsedData)
+  const newParsedData = parse(stringData)
   const values = Object.values(newParsedData)
   expect(values).toBeGreaterThan(0)
   values.forEach((value) => {

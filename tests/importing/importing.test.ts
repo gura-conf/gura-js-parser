@@ -1,4 +1,4 @@
-import { DuplicatedImportError, DuplicatedKeyError, DuplicatedVariableError, FileNotFoundError, loads } from '../../src/index'
+import { DuplicatedImportError, DuplicatedKeyError, DuplicatedVariableError, FileNotFoundError, parse } from '../../src/index'
 import { getFileContentParsed } from '../utils'
 import temp from 'temp'
 
@@ -63,7 +63,7 @@ test('importing_duplicated_imports', () => {
 test('importing_with_absolute_paths', () => {
   const tmp = temp.createWriteStream()
   tmp.write('from_temp: true')
-  const parsedData = loads(`import "${temp.name}"\nfrom_original: false`)
+  const parsedData = parse(`import "${temp.name}"\nfrom_original: false`)
 
   tmp.end()
   expect(parsedData).toEqual({
