@@ -148,7 +148,7 @@ class GuraParser extends Parser {
     this.restartParams(text)
     const result = this.start()
     this.assertEnd()
-    return result !== null ? result : {}
+    return result ?? {}
   }
 
   /**
@@ -797,19 +797,17 @@ class GuraParser extends Parser {
       }
     }
 
-    try {
-      if (numberType === 'integer') {
-        return parseInt(result)
-      } else {
-        return parseFloat(result)
-      }
-    } catch {
+    // NOTE: JS does not raise a parsing error when an invalid value is casted to number. That's why it's checked here
+    const resultValue = numberType === 'integer' ? parseInt(result) : parseFloat(result)
+    if (isNaN(resultValue)) {
       throw new ParseError(
         this.pos + 1,
         this.line,
         `'${result}' is not a valid number`
       )
     }
+
+    return resultValue
   }
 
   /**
