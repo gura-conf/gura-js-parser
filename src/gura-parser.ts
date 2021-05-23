@@ -850,7 +850,7 @@ class GuraParser extends Parser {
               codePoint.push(this.char('0-9a-fA-F'))
             }
             const hexValue = parseInt(codePoint.join(''), 16)
-            const charValue = Buffer.alloc(hexValue).toString() // Converts from UNICODE to string
+            const charValue = String.fromCharCode(hexValue) // Converts from UNICODE to string
             chars.push(charValue)
           } else {
             // Gets escaped char
