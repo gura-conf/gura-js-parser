@@ -43,7 +43,7 @@ test('env_vars', () => {
   process.env[envVarName] = envValue
 
   // Parses and tests
-  const parsedData = parse(`test: ${envVarName}`)
+  const parsedData = parse(`test: $${envVarName}`)
   expect(parsedData).toEqual({ test: envValue })
   process.env[envVarName] = undefined
 })
