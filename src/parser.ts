@@ -226,8 +226,12 @@ class Parser {
   maybeChar (chars: string | null = null): string | null {
     try {
       return this.char(chars)
-    } catch {
-      return null
+    } catch (ex) {
+      if (ex instanceof ParseError) {
+        return null
+      }
+      // If it is not a ParseError, throws to stop parsing
+      throw ex
     }
   }
 
@@ -240,8 +244,12 @@ class Parser {
   maybeMatch (rules: Rule[]): any | null {
     try {
       return this.match(rules)
-    } catch {
-      return null
+    } catch (ex) {
+      if (ex instanceof ParseError) {
+        return null
+      }
+      // If it is not a ParseError, throws to stop parsing
+      throw ex
     }
   }
 
@@ -254,8 +262,12 @@ class Parser {
   maybeKeyword (keywords: string[]): string | null {
     try {
       return this.keyword(keywords)
-    } catch {
-      return null
+    } catch (ex) {
+      if (ex instanceof ParseError) {
+        return null
+      }
+      // If it is not a ParseError, throws to stop parsing
+      throw ex
     }
   }
 }
