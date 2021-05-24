@@ -797,8 +797,11 @@ class GuraParser extends Parser {
       }
     }
 
+    // Replaces underscores as JS does not support them
+    const resultWithoutUnderscore = result.replace(/_/g, '')
+
     // NOTE: JS does not raise a parsing error when an invalid value is casted to number. That's why it's checked here
-    const resultValue = numberType === 'integer' ? parseInt(result) : parseFloat(result)
+    const resultValue = numberType === 'integer' ? parseInt(resultWithoutUnderscore) : parseFloat(resultWithoutUnderscore)
     if (isNaN(resultValue)) {
       throw new ParseError(
         this.pos + 1,
