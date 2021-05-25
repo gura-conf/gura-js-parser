@@ -1,5 +1,5 @@
 {
-  "name": "gura-ts-parser",
+  "name": "gura",
   "version": "0.1.0",
   "description": "A Gura parser for Javascript/Typescript",
   "scripts": {
