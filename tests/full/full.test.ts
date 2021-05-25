@@ -86,7 +86,7 @@ test('parse', () => {
 test('parse_nan', () => {
   const parsedData = getFileContentParsed(parentFolder, 'nan.ura')
   const values = Object.values(parsedData)
-  expect(values).toBeGreaterThan(0)
+  expect(values.length).toBeGreaterThan(0)
   values.forEach((value) => {
     expect(value).toBeNaN()
   })
@@ -106,7 +106,7 @@ test('dump_nan', () => {
   const stringData = dump(parsedData)
   const newParsedData = parse(stringData)
   const values = Object.values(newParsedData)
-  expect(values).toBeGreaterThan(0)
+  expect(values.length).toBeGreaterThan(0)
   values.forEach((value) => {
     expect(value).toBeNaN()
   })

@@ -916,6 +916,20 @@ class GuraParser extends Parser {
       case 'string':
         return `"${value}"`
       case 'number':
+        // Special cases
+        if (value === Number.POSITIVE_INFINITY) {
+          return 'inf'
+        } else {
+          if (value === Number.NEGATIVE_INFINITY) {
+            return '-inf'
+          } else {
+            if (isNaN(value)) {
+              return 'nan'
+            }
+          }
+        }
+
+        // Normal number
         return value.toString()
       case 'boolean':
         return value ? 'true' : 'false'
