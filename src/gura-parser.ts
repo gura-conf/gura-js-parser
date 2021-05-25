@@ -1,4 +1,5 @@
 import path from 'path'
+import { readFileSync, existsSync } from 'fs'
 import { Parser, ParseError } from './parser'
 
 /** Raises when a variable is not defined. */
@@ -363,36 +364,38 @@ class GuraParser extends Parser {
       }
     }
 
+    let finalContent = ''
     if (filesToImport.length > 0) {
-      const finalContent = ''
-      filesToImport.forEach(([fileToImport, originFilePath]) => {
+      for (let [fileToImport, originFilePath] of filesToImport) {
         // Gets the final file path considering parent directory
         if (originFilePath !== null) {
           fileToImport = path.join(originFilePath, fileToImport)
         }
 
         // Files can be imported only once.This prevents circular reference
-        if (importedFiles.has(fileToImport)) {
+        if (this.importedFiles.has(fileToImport)) {
           throw new DuplicatedImportError(`The file ${fileToImport} has been already imported`)
         }
 
-        // FIXME: when it's finished the rest of the files
-        // with open(fileToImport, 'r') as f {
-        //   // Gets content considering imports
-        //   content = f.read()
-        //   aux_parser = GuraParser()
-        //   parentDirPath = os.path.dirname(fileToImport)
-        //   content_with_import, importedFiles = aux_parser.getTextWithImports(
-        //   content,
-        //   parentDirPath,
-        //   importedFiles
-        //   )
-        //   final_content += content_with_import + '\n'
-        //   importedFiles.add(fileToImport)
+        // Checks if file exists
+        if (!existsSync(fileToImport)) {
+          throw new FileNotFoundError(`The file ${fileToImport} does not exist`)
+        }
 
-        //   this.importedFiles.add(fileToImport)
-        // }
-      })
+        // Gets content considering imports
+        const content = readFileSync(fileToImport, 'utf-8')
+        const auxParser = new GuraParser()
+        const parentDirPath = path.dirname(fileToImport)
+        const [contentWithImport, importedFiles] = auxParser.getTextWithImports(
+          content,
+          parentDirPath,
+          this.importedFiles
+        )
+        finalContent += contentWithImport + '\n'
+        importedFiles.add(fileToImport)
+
+        this.importedFiles.add(fileToImport)
+      }
 
       // Sets as new text
       this.restartParams(finalContent + this.text.substring(this.pos + 1))

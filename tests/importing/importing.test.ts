@@ -1,9 +1,10 @@
 import { DuplicatedImportError, DuplicatedKeyError, DuplicatedVariableError, FileNotFoundError, parse } from '../../src/index'
 import { getFileContentParsed } from '../utils'
-import temp from 'temp'
+import { writeFileSync } from 'fs'
+import tmp from 'tmp'
 
-// Automatically track and cleanup files at exit
-temp.track()
+/** Temp file structure. */
+type TempFile = { name: string, fd: number, removeCallback: () => void }
 
 const parentFolder = 'importing'
 
@@ -34,7 +35,7 @@ test('importing_with_variables', () => {
 /** Tests errors importing a non existing file. */
 test('importing_not_found_error', () => {
   expect(() => {
-    getFileContentParsed(parentFolder, 'invalid_file.ura')
+    parse('import "invalid_file.ura"')
   }).toThrow(FileNotFoundError)
 })
 
@@ -61,11 +62,12 @@ test('importing_duplicated_imports', () => {
 
 /** Tests that absolute paths works as expected. */
 test('importing_with_absolute_paths', () => {
-  const tmp = temp.createWriteStream()
-  tmp.write('from_temp: true')
-  const parsedData = parse(`import "${temp.name}"\nfrom_original: false`)
+  // Creates temporary file and writes a key/value pair on it
+  const stream: TempFile = tmp.fileSync()
+  writeFileSync(stream.name, 'from_temp: true')
+  const parsedData = parse(`import "${stream.name}"\nfrom_original: false`)
+  stream.removeCallback()
 
-  tmp.end()
   expect(parsedData).toEqual({
     from_temp: true,
     from_original: false
