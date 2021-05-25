@@ -765,7 +765,8 @@ class GuraParser extends Parser {
       chars.push(char)
     }
 
-    const result = chars.join('').trimRight()
+    // Replaces underscores as JS does not support them
+    const result = chars.join('').trimRight().replace(/_/g, '')
 
     // Checks hexadecimal and octal format
     const prefix = result.substring(0, 2)
@@ -790,18 +791,15 @@ class GuraParser extends Parser {
     // Checks inf or NaN
     const lastThreeChars = result.substring(result.length - 3)
     if (lastThreeChars === 'inf') {
-      return Infinity
+      return result[0] === '-' ? -Infinity : Infinity
     } else {
       if (lastThreeChars === 'nan') {
         return NaN
       }
     }
 
-    // Replaces underscores as JS does not support them
-    const resultWithoutUnderscore = result.replace(/_/g, '')
-
     // NOTE: JS does not raise a parsing error when an invalid value is casted to number. That's why it's checked here
-    const resultValue = numberType === 'integer' ? parseInt(resultWithoutUnderscore) : parseFloat(resultWithoutUnderscore)
+    const resultValue = numberType === 'integer' ? parseInt(result) : parseFloat(result)
     if (isNaN(resultValue)) {
       throw new ParseError(
         this.pos + 1,
