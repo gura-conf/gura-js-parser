@@ -18,6 +18,9 @@ module.exports = {
     '@typescript-eslint'
   ],
   rules: {
-    'prefer-const': 'error'
+    'prefer-const': 'error',
+    // Both lines below fixes unused enum warning (see https://github.com/typescript-eslint/typescript-eslint/issues/2621)
+    'no-unused-vars': 'off',
+    '@typescript-eslint/no-unused-vars': 'error'
   }
 }
