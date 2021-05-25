@@ -3,15 +3,25 @@
   "version": "0.1.0",
   "description": "A Gura parser for Javascript/Typescript",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "build": "tsc"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
     "/dist"
   ],
-  "author": "JWare Solutions",
+  "author": "JWare Solutions <jware.organization@gmail.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jware-solutions/gura-js-parser"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/jware-solutions/gura-js-parser/issues"
+  },
+  "homepage": "https://github.com/jware-solutions/gura-js-parser",
   "devDependencies": {
     "@babel/core": "^7.14.2",
     "@babel/preset-env": "^7.14.2",
