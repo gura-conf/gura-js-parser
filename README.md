@@ -1,6 +1,4 @@
-[![Build Status](https://travis-ci.com/jware-solutions/gura-js-parser.svg?token=WzSyj6zPAyX1GUKsoSAG&branch=main)](https://travis-ci.com/jware-solutions/gura-js-parser)
-
-# Gura Javascript/Typescript parser
+# Gura Javascript/Typescript parser &middot; [![Build Status](https://travis-ci.com/jware-solutions/gura-js-parser.svg?token=WzSyj6zPAyX1GUKsoSAG&branch=main)](https://travis-ci.com/jware-solutions/gura-js-parser)
 
 This repository contains the implementation of a [Gura][gura] format parser for Javascript written in pure Typescript.
 
