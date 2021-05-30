@@ -66,7 +66,7 @@ const INF_AND_NAN = 'in' // The rest of the chars are defined in hex_oct_bin
 const ACCEPTABLE_NUMBER_CHARS = BASIC_NUMBERS_CHARS + HEX_OCT_BIN + INF_AND_NAN + 'Ee+._-'
 
 // Acceptable chars for keys
-const KEY_ACCEPTABLE_CHARS = '0-9A-Za-z_-'
+const KEY_ACCEPTABLE_CHARS = '0-9A-Za-z_'
 
 // Special characters to be escaped
 const ESCAPE_SEQUENCES = {
@@ -98,11 +98,8 @@ interface MatchResult {
 
 type PrimitiveType = null | boolean | number | string
 
-type BlankDescription = 'tabs' | 'whitespace'
-
 class GuraParser extends Parser {
   private variables: Map<string, any>
-  private indentChar: string | null
   private indentationLevels: number[]
   private importedFiles: Set<string>
 
@@ -110,7 +107,6 @@ class GuraParser extends Parser {
     super()
 
     this.variables = new Map()
-    this.indentChar = null
     this.indentationLevels = []
     this.importedFiles = new Set()
 
@@ -209,16 +205,11 @@ class GuraParser extends Parser {
         break
       }
 
-      // If it is the first case of indentation stores the indentation char
-      if (this.indentChar !== null) {
-        // If user uses different kind of indentation raises a parsing error
-        if (blank !== this.indentChar) {
-          this.raiseIndentationCharError()
-        }
-      } else {
-        // From now on this character will be used to indicate the indentation
-        this.indentChar = blank
+      // Tabs are not allowed
+      if (blank === '\t') {
+        throw new InvalidIndentationError('Tabs are not allowed to define indentation blocks')
       }
+
       currentIndentationLevel += 1
     }
 
@@ -241,25 +232,6 @@ class GuraParser extends Parser {
     while (this.maybeChar(' \f\v\r\n\t')) {
       continue
     }
-  }
-
-  /**
-   * Raises a ParseError indicating that the indentation chars are inconsistent.
-   *
-   * @throws ParseError as described in method description.
-   */
-  private raiseIndentationCharError () {
-    let goodChar: BlankDescription
-    let receivedChar: BlankDescription
-    if (this.indentChar === '\t') {
-      goodChar = 'tabs'
-      receivedChar = 'whitespace'
-    } else {
-      goodChar = 'whitespace'
-      receivedChar = 'tabs'
-    }
-
-    throw new InvalidIndentationError(`Wrong indentation character! Using ${goodChar} but received ${receivedChar}`)
   }
 
   /**
@@ -287,7 +259,7 @@ class GuraParser extends Parser {
    */
   guraImport (): MatchResult {
     this.keyword(['import'])
-    this.match([this.ws])
+    this.char(' ')
     const fileToImport = this.match([this.quotedStringWithVar])
     this.match([this.ws])
     this.maybeMatch([this.newLine])
@@ -490,7 +462,7 @@ class GuraParser extends Parser {
     this.keyword(['$'])
     const key = this.match([this.key])
     this.maybeMatch([this.ws])
-    const value = this.match([this.anyType])
+    const value = this.match([this.basicString, this.literalString, this.number, this.variableValue])
 
     if (this.variables.has(key)) {
       throw new DuplicatedVariableError(`Variable '${key}' has been already declared`)
@@ -512,9 +484,6 @@ class GuraParser extends Parser {
     this.maybeMatch([this.ws])
     this.keyword(['['])
     while (true) {
-      this.maybeMatch([this.ws])
-      this.maybeMatch([this.newLine])
-
       // Discards useless lines between elements of array
       const uselessLine = this.maybeMatch([this.uselessLine])
       if (uselessLine !== null) {
@@ -654,9 +623,9 @@ class GuraParser extends Parser {
     // Check indentation
     const lastIndentationBlock = this.getLastIndentationLevel()
 
-    // Check if indentation is divisible by 2
-    if (currentIndentationLevel % 2 !== 0) {
-      throw new InvalidIndentationError('Indentation block must be divisible by 2')
+    // Check if indentation is divisible by 4
+    if (currentIndentationLevel % 4 !== 0) {
+      throw new InvalidIndentationError(`Indentation block (${currentIndentationLevel}) must be divisible by 4`)
     }
 
     if (lastIndentationBlock === null || currentIndentationLevel > lastIndentationBlock) {
@@ -682,10 +651,15 @@ class GuraParser extends Parser {
       )
     }
 
+    // Checks indentation against parent level
     if (value?.resultType === MatchResultType.EXPRESSION) {
       const [objectValues, indentationLevel] = value.value
       if (indentationLevel === currentIndentationLevel) {
         throw new InvalidIndentationError(`Wrong level for parent with key ${key}`)
+      } else {
+        if (Math.abs(currentIndentationLevel - indentationLevel) !== 4) {
+          throw new InvalidIndentationError('Difference between different indentation levels must be 4')
+        }
       }
 
       value = objectValues

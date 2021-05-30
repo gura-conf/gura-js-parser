@@ -1,4 +1,8 @@
 export {
+  ParseError
+} from './parser'
+
+export {
   parse,
   dump,
   VariableNotDefinedError,

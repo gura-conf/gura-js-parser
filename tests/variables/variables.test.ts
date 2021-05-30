@@ -1,4 +1,4 @@
-import { DuplicatedVariableError, parse, VariableNotDefinedError } from '../../src/index'
+import { DuplicatedVariableError, parse, ParseError, VariableNotDefinedError } from '../../src/index'
 import { getFileContentParsed } from '../utils'
 
 const parentFolder = 'variables'
@@ -46,4 +46,39 @@ test('env_vars', () => {
   const parsedData = parse(`test: $${envVarName}`)
   expect(parsedData).toEqual({ test: envValue })
   process.env[envVarName] = undefined
+})
+
+/** Tests invalid variable value type. */
+test('invalid_variable', () => {
+  expect(() => {
+    parse('$invalid: true')
+  }).toThrow(ParseError)
+})
+
+/** Tests invalid variable value type. */
+test('invalid_variable_2', () => {
+  expect(() => {
+    parse('$invalid: false')
+  }).toThrow(ParseError)
+})
+
+/** Tests invalid variable value type. */
+test('invalid_variable_3', () => {
+  expect(() => {
+    parse('$invalid: null')
+  }).toThrow(ParseError)
+})
+
+/** Tests invalid variable value type. */
+test('invalid_variable_4', () => {
+  expect(() => {
+    parse('$invalid: [ 1, 2, 3]')
+  }).toThrow(ParseError)
+})
+
+/** Tests invalid variable value type. */
+test('invalid_variable_5', () => {
+  expect(() => {
+    getFileContentParsed(parentFolder, 'invalid_variable_with_object.ura')
+  }).toThrow(ParseError)
 })

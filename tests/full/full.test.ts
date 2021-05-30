@@ -1,5 +1,5 @@
 import { getFileContentParsed } from '../utils'
-import { parse, dump } from '../../src/index'
+import { parse, dump, ParseError } from '../../src/index'
 
 const parentFolder = 'full'
 
@@ -31,6 +31,7 @@ const expected = {
   sf3: -Infinity,
   bool1: true,
   bool2: false,
+  1234: '1234',
   services: {
     nginx: {
       host: '127.0.0.1',
@@ -110,4 +111,35 @@ test('dump_nan', () => {
   values.forEach((value) => {
     expect(value).toBeNaN()
   })
+})
+
+/** Tests empty Gura documents. */
+test('empty', () => {
+  expect(parse('')).toEqual({})
+})
+
+/** Tests empty Gura documents, even when some data is defined. */
+test('empty_2', () => {
+  expect(parse('$unused_var: 5')).toEqual({})
+})
+
+/** Tests invalid key. */
+test('invalid_key', () => {
+  expect(() => {
+    parse('with.dot: 5')
+  }).toThrow(ParseError)
+})
+
+/** Tests invalid key. */
+test('invalid_key_2', () => {
+  expect(() => {
+    parse('"with_quotes": 5')
+  }).toThrow(ParseError)
+})
+
+/** Tests invalid key. */
+test('invalid_key_3', () => {
+  expect(() => {
+    parse('with-dashes: 5')
+  }).toThrow(ParseError)
 })

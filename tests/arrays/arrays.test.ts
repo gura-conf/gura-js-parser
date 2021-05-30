@@ -32,6 +32,11 @@ const expected = {
     2,
     [4, 5, 6],
     3
+  ],
+  separator: [
+    { a: 1, b: 2 },
+    { a: 1 },
+    { b: 2 }
   ]
 }
 

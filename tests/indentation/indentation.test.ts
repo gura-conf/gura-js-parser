@@ -10,9 +10,23 @@ test('wrong_indentation_char', () => {
   }).toThrow(InvalidIndentationError)
 })
 
-/** Tests raising an error when indentation is not divisible by 2. */
-test('indentation_not_divisible_by_2', () => {
+/** Tests raising an error when indentation is not divisible by 4. */
+test('indentation_not_divisible_by_4', () => {
   expect(() => {
-    getFileContentParsed(parentFolder, 'not_divisible_by_2.ura')
+    getFileContentParsed(parentFolder, 'not_divisible_by_4.ura')
+  }).toThrow(InvalidIndentationError)
+})
+
+/** Tests raising an error when two levels of an object are not separated by only 4 spaces of difference. */
+test('indentation_not_divisible_by_4', () => {
+  expect(() => {
+    getFileContentParsed(parentFolder, 'more_than_4_difference.ura')
+  }).toThrow(InvalidIndentationError)
+})
+
+/** Tests raising an error when tab character is used as indentation. */
+test('indentation_not_divisible_by_4', () => {
+  expect(() => {
+    getFileContentParsed(parentFolder, 'with_tabs.ura')
   }).toThrow(InvalidIndentationError)
 })

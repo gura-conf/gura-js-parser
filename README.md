@@ -1,6 +1,6 @@
 # Gura Javascript/Typescript parser
 
-This repository contains the implementation of a [Gura][gura] format parser for Javascript written in pure Typescript.
+This repository contains the implementation of a [Gura][gura] (compliant with version 0.1.0) format parser for Javascript written in pure Typescript.
 
 
 ## Installation

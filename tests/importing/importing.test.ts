@@ -1,4 +1,4 @@
-import { DuplicatedImportError, DuplicatedKeyError, DuplicatedVariableError, FileNotFoundError, parse } from '../../src/index'
+import { DuplicatedImportError, DuplicatedKeyError, DuplicatedVariableError, FileNotFoundError, parse, ParseError } from '../../src/index'
 import { getFileContentParsed } from '../utils'
 import { writeFileSync } from 'fs'
 import tmp from 'tmp'
@@ -72,4 +72,18 @@ test('importing_with_absolute_paths', () => {
     from_temp: true,
     from_original: false
   })
+})
+
+/** Tests errors invalid importing sentence (there are blanks before import). */
+test('parse_error_1', () => {
+  expect(() => {
+    parse('  import "another_file.ura"')
+  }).toThrow(ParseError)
+})
+
+/** Tests errors invalid importing sentence (there are more than one whitespace between import and file name). */
+test('parse_error_2', () => {
+  expect(() => {
+    parse('import   "another_file.ura"')
+  }).toThrow(ParseError)
 })
