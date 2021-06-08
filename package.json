@@ -1,6 +1,6 @@
 {
   "name": "gura",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "A Gura parser for Javascript/Typescript",
   "scripts": {
     "test": "jest",

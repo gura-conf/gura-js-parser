@@ -29,6 +29,7 @@ const expected = {
   sf1: Infinity,
   sf2: Infinity,
   sf3: -Infinity,
+  null: null,
   bool1: true,
   bool2: false,
   1234: '1234',

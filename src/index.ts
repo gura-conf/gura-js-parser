@@ -4,11 +4,14 @@ export {
 
 export {
   parse,
-  dump,
+  dump
+} from './gura-parser'
+
+export {
   VariableNotDefinedError,
   DuplicatedVariableError,
   InvalidIndentationError,
   FileNotFoundError,
   DuplicatedKeyError,
   DuplicatedImportError
-} from './gura-parser'
+} from './errors'

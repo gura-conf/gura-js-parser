@@ -1,62 +1,7 @@
 import path from 'path'
 import { readFileSync, existsSync } from 'fs'
 import { Parser, ParseError } from './parser'
-
-/** Raises when a variable is not defined. */
-class VariableNotDefinedError extends Error {
-  constructor (message?: string) {
-    super(message)
-    Object.setPrototypeOf(this, new.target.prototype)
-    this.name = VariableNotDefinedError.name
-  }
-}
-
-/** Raises when a variable is defined more than once. */
-class DuplicatedVariableError extends Error {
-  constructor (message?: string) {
-    super(message)
-    Object.setPrototypeOf(this, new.target.prototype)
-    this.name = DuplicatedVariableError.name
-  }
-}
-
-/** Raises when indentation is invalid. */
-class InvalidIndentationError extends Error {
-  constructor (message?: string) {
-    super(message)
-    Object.setPrototypeOf(this, new.target.prototype)
-    this.name = InvalidIndentationError.name
-  }
-}
-
-/** Raises when file to be parsed does not exist. */
-class FileNotFoundError extends Error {
-  constructor (message?: string) {
-    super(message)
-    Object.setPrototypeOf(this, new.target.prototype)
-    this.name = FileNotFoundError.name
-  }
-}
-
-/** Raises when a key is defined more than once. */
-class DuplicatedKeyError extends Error {
-  constructor (message?: string) {
-    super(message)
-    Object.setPrototypeOf(this, new.target.prototype)
-    this.name = DuplicatedKeyError.name
-  }
-}
-
-/** Raises when a file is imported more than once. */
-class DuplicatedImportError extends Error {
-  constructor (message?: string) {
-    super(message)
-    Object.setPrototypeOf(this, new.target.prototype)
-    this.name = DuplicatedImportError.name
-  }
-}
-
-/* ++++++++++++++++++++ PARSER ++++++++++++++++++++ */
+import { DuplicatedImportError, DuplicatedKeyError, DuplicatedVariableError, FileNotFoundError, InvalidIndentationError, VariableNotDefinedError } from './errors'
 
 // Number chars
 const BASIC_NUMBERS_CHARS = '0-9'
@@ -88,6 +33,8 @@ enum MatchResultType {
   IMPORT,
   VARIABLE,
   EXPRESSION,
+  PRIMITIVE,
+  LIST
 }
 
 /* Match expression method's result */
@@ -95,8 +42,6 @@ interface MatchResult {
   resultType: MatchResultType
   value?: any
 }
-
-type PrimitiveType = null | boolean | number | string
 
 class GuraParser extends Parser {
   private variables: Map<string, any>
@@ -394,7 +339,7 @@ class GuraParser extends Parser {
    * @returns The corresponding matched value.
    */
   anyType (): any {
-    const result = this.maybeMatch([this.primitiveType])
+    const result: MatchResult | null = this.maybeMatch([this.primitiveType])
     if (result !== null) {
       return result
     }
@@ -407,7 +352,7 @@ class GuraParser extends Parser {
    *
    * @returns The corresponding matched value.
    */
-  primitiveType (): PrimitiveType {
+  primitiveType (): MatchResult {
     this.maybeMatch([this.ws])
     return this.match([this.null, this.boolean, this.basicString, this.literalString, this.number, this.variableValue])
   }
@@ -446,10 +391,10 @@ class GuraParser extends Parser {
    *
    * @returns Variable value.
    */
-  variableValue (): PrimitiveType {
+  variableValue (): MatchResult {
     this.keyword(['$'])
     const key = this.match([this.unquotedString])
-    return this.getVariableValue(key)
+    return { resultType: MatchResultType.PRIMITIVE, value: this.getVariableValue(key) }
   }
 
   /**
@@ -462,14 +407,14 @@ class GuraParser extends Parser {
     this.keyword(['$'])
     const key = this.match([this.key])
     this.maybeMatch([this.ws])
-    const value = this.match([this.basicString, this.literalString, this.number, this.variableValue])
+    const matchResult: MatchResult = this.match([this.basicString, this.literalString, this.number, this.variableValue])
 
     if (this.variables.has(key)) {
       throw new DuplicatedVariableError(`Variable '${key}' has been already declared`)
     }
 
     // Store as variable
-    this.variables.set(key, value)
+    this.variables.set(key, matchResult.value)
     return { resultType: MatchResultType.VARIABLE }
   }
 
@@ -478,7 +423,7 @@ class GuraParser extends Parser {
    *
    * @returns Matched list.
    */
-  list (): any[] {
+  list (): MatchResult {
     const result = []
 
     this.maybeMatch([this.ws])
@@ -490,13 +435,15 @@ class GuraParser extends Parser {
         continue
       }
 
-      let item = this.maybeMatch([this.anyType])
+      let item: MatchResult | null = this.maybeMatch([this.anyType])
       if (item === null) {
         break
       }
 
-      if (item?.resultType === MatchResultType.EXPRESSION) {
+      if (item.resultType === MatchResultType.EXPRESSION) {
         item = item.value[0]
+      } else {
+        item = item.value
       }
 
       result.push(item)
@@ -510,7 +457,7 @@ class GuraParser extends Parser {
     this.maybeMatch([this.ws])
     this.maybeMatch([this.newLine])
     this.keyword([']'])
-    return result
+    return { resultType: MatchResultType.LIST, value: result }
   }
 
   /**
@@ -642,8 +589,8 @@ class GuraParser extends Parser {
     }
 
     // If it === null then is an empty expression, and therefore invalid
-    let value = this.match([this.anyType])
-    if (value === null) {
+    let result: MatchResult | null = this.match([this.anyType])
+    if (result === null) {
       throw new ParseError(
         this.pos + 1,
         this.line,
@@ -652,8 +599,8 @@ class GuraParser extends Parser {
     }
 
     // Checks indentation against parent level
-    if (value?.resultType === MatchResultType.EXPRESSION) {
-      const [objectValues, indentationLevel] = value.value
+    if (result.resultType === MatchResultType.EXPRESSION) {
+      const [objectValues, indentationLevel] = result.value
       if (indentationLevel === currentIndentationLevel) {
         throw new InvalidIndentationError(`Wrong level for parent with key ${key}`)
       } else {
@@ -662,12 +609,14 @@ class GuraParser extends Parser {
         }
       }
 
-      value = objectValues
+      result = objectValues
+    } else {
+      result = result.value
     }
 
     this.maybeMatch([this.newLine])
 
-    return { resultType: MatchResultType.PAIR, value: [key, value, currentIndentationLevel] }
+    return { resultType: MatchResultType.PAIR, value: [key, result, currentIndentationLevel] }
   }
 
   /**
@@ -684,9 +633,9 @@ class GuraParser extends Parser {
    *
    * @returns Null.
    */
-  null (): null {
+  null (): MatchResult {
     this.keyword(['null'])
-    return null
+    return { resultType: MatchResultType.PRIMITIVE, value: null }
   }
 
   /**
@@ -694,8 +643,9 @@ class GuraParser extends Parser {
    *
    * @returns Matched boolean value.
    */
-  boolean (): boolean {
-    return this.keyword(['true', 'false']) === 'true'
+  boolean (): MatchResult {
+    const value = this.keyword(['true', 'false']) === 'true'
+    return { resultType: MatchResultType.PRIMITIVE, value: value }
   }
 
   /**
@@ -724,7 +674,7 @@ class GuraParser extends Parser {
    * @throws ParseError if the extracted string is not a valid number.
    * @returns Returns an number or a float depending of type inference.
    */
-  number (): number {
+  number (): MatchResult {
     let numberType: 'integer' | 'float' = 'integer'
 
     const chars = [this.char(ACCEPTABLE_NUMBER_CHARS)]
@@ -762,16 +712,16 @@ class GuraParser extends Parser {
           break
       }
 
-      return parseInt(withoutPrefix, base)
+      return { resultType: MatchResultType.PRIMITIVE, value: parseInt(withoutPrefix, base) }
     }
 
     // Checks inf or NaN
     const lastThreeChars = result.substring(result.length - 3)
     if (lastThreeChars === 'inf') {
-      return result[0] === '-' ? -Infinity : Infinity
+      return { resultType: MatchResultType.PRIMITIVE, value: result[0] === '-' ? -Infinity : Infinity }
     } else {
       if (lastThreeChars === 'nan') {
-        return NaN
+        return { resultType: MatchResultType.PRIMITIVE, value: NaN }
       }
     }
 
@@ -785,7 +735,7 @@ class GuraParser extends Parser {
       )
     }
 
-    return resultValue
+    return { resultType: MatchResultType.PRIMITIVE, value: resultValue }
   }
 
   /**
@@ -793,7 +743,7 @@ class GuraParser extends Parser {
    *
    * @returns Matched string.
    */
-  basicString (): string {
+  basicString (): MatchResult {
     const quote = this.keyword(['"""', '"'])
 
     const isMultiline = quote === '"""'
@@ -846,7 +796,7 @@ class GuraParser extends Parser {
       }
     }
 
-    return chars.join('')
+    return { resultType: MatchResultType.PRIMITIVE, value: chars.join('') }
   }
 
   /**
@@ -854,7 +804,7 @@ class GuraParser extends Parser {
    *
    * @returns Matched string.
    */
-  literalString (): string {
+  literalString (): MatchResult {
     const quote = this.keyword(["'''", "'"])
 
     const isMultiline = quote === "'''"
@@ -877,7 +827,7 @@ class GuraParser extends Parser {
       chars.push(char)
     }
 
-    return chars.join('')
+    return { resultType: MatchResultType.PRIMITIVE, value: chars.join('') }
   }
 
   /**
@@ -888,6 +838,10 @@ class GuraParser extends Parser {
    * @returns String representation of the received value.
    */
   private getValueForString (indentationLevel: number, value: any): string {
+    if (value === null) {
+      return 'null'
+    }
+
     const valueType = typeof value
     switch (valueType) {
       case 'string':
