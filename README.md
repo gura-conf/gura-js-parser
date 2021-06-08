@@ -1,6 +1,6 @@
 # Gura Javascript/Typescript parser
 
-This repository contains the implementation of a [Gura][gura] (compliant with version 0.1.0) format parser for Javascript written in pure Typescript.
+This repository contains the implementation of a [Gura][gura] (compliant with version 1.0.0) format parser for Javascript written in pure Typescript.
 
 
 ## Installation
@@ -66,9 +66,10 @@ All kind of contribution is welcome! If you want to contribute just:
 
 To run all the tests: `yarn test` or `npm run test`
 
-[gura]: https://github.com/jware-solutions/gura
-
 
 ## Licence
 
 This repository is distributed under the terms of the MIT license.
+
+
+[gura]: https://github.com/gura-conf/gura

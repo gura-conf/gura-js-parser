@@ -15,13 +15,13 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jware-solutions/gura-js-parser"
+    "url": "git+https://github.com/gura-conf/gura-js-parser"
   },
   "keywords": [],
   "bugs": {
-    "url": "https://github.com/jware-solutions/gura-js-parser/issues"
+    "url": "https://github.com/gura-conf/gura-js-parser/issues"
   },
-  "homepage": "https://github.com/jware-solutions/gura-js-parser",
+  "homepage": "https://github.com/gura-conf/gura-js-parser",
   "devDependencies": {
     "@babel/core": "^7.14.2",
     "@babel/preset-env": "^7.14.2",
