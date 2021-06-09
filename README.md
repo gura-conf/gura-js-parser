@@ -52,6 +52,26 @@ for (const host of parsedGura['hosts']) {
 console.log(dump(parsedGura))
 ```
 
+## Troubleshoot
+
+
+### Module not found: Error: Can't resolve 'fs' (or 'path')
+
+If you are using this library for the browser, there are some components like `path` or `fs` that are not available as you can not access the filesystem. If your code is not transpiling, you can try adding this block to your Webpack configuration:
+
+```javascript
+module.export = {
+  // ...
+  resolve: {
+    // ...
+    fallback: {
+      fs: false,
+      path: false
+    }
+  }
+}
+```
+
 
 ## Contributing
 
