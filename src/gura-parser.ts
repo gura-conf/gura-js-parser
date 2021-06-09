@@ -449,6 +449,7 @@ class GuraParser extends Parser {
       result.push(item)
 
       this.maybeMatch([this.ws])
+      this.maybeMatch([this.newLine])
       if (!this.maybeKeyword([','])) {
         break
       }

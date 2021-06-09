@@ -40,6 +40,15 @@ const expected = {
   ]
 }
 
+const expectedInsideObject = {
+  model: {
+    columns: [
+      ['var1', 'str'],
+      ['var2', 'str']
+    ]
+  }
+}
+
 /** Tests all kind of arrays. */
 test('array_normal', () => {
   const parsedData = getFileContentParsed(parentFolder, 'normal.ura')
@@ -50,4 +59,12 @@ test('array_normal', () => {
 test('array_normal_with_comments', () => {
   const parsedData = getFileContentParsed(parentFolder, 'with_comments.ura')
   expect(parsedData).toEqual(expected)
+})
+
+/** Tests issue https://github.com/gura-conf/gura/issues/1. */
+test('_array_in_object', () => {
+  let parsedData = getFileContentParsed(parentFolder, 'array_in_object.ura')
+  expect(parsedData).toEqual(expectedInsideObject)
+  parsedData = getFileContentParsed(parentFolder, 'array_in_object.ura')
+  expect(parsedData).toEqual(expectedInsideObject)
 })
