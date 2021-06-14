@@ -115,7 +115,7 @@ class Parser {
     for (const charRange of this.splitCharRanges(chars)) {
       if (charRange.length === 1) {
         if (nextChar === charRange) {
-          this.pos += 1 
+          this.pos += 1
           return nextChar
         }
       } else {
