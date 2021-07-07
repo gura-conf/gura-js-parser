@@ -184,17 +184,12 @@ class GuraParser extends Parser {
    *
    * @param originalText - Text to be parsed.
    * @param parentDirPath - Parent directory to keep relative paths reference.
-   * @param importedFiles - Set with imported files to check if any was imported more than once.
    * @returns Final text with imported files' text on it.
    */
-  private getTextWithImports (
-    originalText: string,
-    parentDirPath: string,
-    importedFiles: Set<string>
-  ): [string, Set<string>] {
+  private getTextWithImports (originalText: string, parentDirPath: string): string {
     this.restartParams(originalText)
-    importedFiles = this.computeImports(parentDirPath, importedFiles)
-    return [this.text, importedFiles]
+    this.computeImports(parentDirPath)
+    return this.text
   }
 
   /**
@@ -260,12 +255,8 @@ class GuraParser extends Parser {
    * Computes all the import sentences in Gura file taking into consideration relative paths to imported files.
    *
    * @param parentDirPath - Current parent directory path to join with imported files.
-   * @param importedFiles - Set with already imported files to raise an error in case of importing the same file
-    more than once.
-   * @returns Set with imported files after all the imports to reuse in the importation process of the imported
-    Gura files.
    */
-  private computeImports (parentDirPath: string | null, importedFiles: Set<string>): Set<string> {
+  private computeImports (parentDirPath: string | null) {
     const filesToImport: [string, string][] = []
 
     // First, consumes all the import sentences to replace all of them
@@ -303,13 +294,8 @@ class GuraParser extends Parser {
         const content = readFileSync(fileToImport, 'utf-8')
         const auxParser = new GuraParser()
         const parentDirPath = path.dirname(fileToImport)
-        const [contentWithImport, importedFiles] = auxParser.getTextWithImports(
-          content,
-          parentDirPath,
-          this.importedFiles
-        )
+        const contentWithImport = auxParser.getTextWithImports(content, parentDirPath)
         finalContent += contentWithImport + '\n'
-        importedFiles.add(fileToImport)
 
         this.importedFiles.add(fileToImport)
       }
@@ -317,8 +303,6 @@ class GuraParser extends Parser {
       // Sets as new text
       this.restartParams(finalContent + this.text.substring(this.pos + 1))
     }
-
-    return importedFiles
   }
 
   /**
@@ -327,7 +311,7 @@ class GuraParser extends Parser {
    * @returns Dict with all the extracted values from Gura string.
    */
   start (): Object | null {
-    this.computeImports(null, new Set())
+    this.computeImports(null)
     const result: MatchResult | null = this.match([this.expression])
     this.eatWsAndNewLines()
     return result !== null ? result.value[0] : null
