@@ -1,10 +1,11 @@
 {
   "name": "gura",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "A Gura parser for Javascript/Typescript",
   "scripts": {
     "test": "jest",
-    "build": "del 'dist/*' && tsc"
+    "build": "del 'dist/*' && tsc",
+    "upload": "yarn build && yarn publish"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
