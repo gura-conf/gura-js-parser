@@ -816,70 +816,129 @@ class GuraParser extends Parser {
   }
 
   /**
-   * Takes a value, check its type and returns its correct value.
+   * Checks if an element is an object.
    *
-   * @param indentationLevel - Current indentation level to compute indentation in string.
+   * @param elem - Element to check if is an object.
+   * @returns True if it is a object. False otherwise.
+   */
+  private elemIsObj = (elem: any) => typeof elem === 'object' && !Array.isArray(elem)
+
+  /**
+   * Generates a Gura string from a dictionary (aka. Stringify). Takes a value, check its type and returns its correct value in a recursive way.
+   *
    * @param value - Value retrieved from dict to transform in string.
+   * @param indentationLevel - Current indentation level to compute indentation in string.
+   * @param newLine - If true, it prints a new line at the end of some values. This prevents some issues when dumps an object or array.
    * @returns String representation of the received value.
    */
-  private getValueForString (indentationLevel: number, value: any): string {
+  dump (value: any, indentationLevel: number, newLine: boolean): string {
+    const newLineChar = newLine ? '\n' : ''
+
     if (value === null) {
-      return 'null'
+      return 'null' + newLineChar
     }
 
     const valueType = typeof value
     switch (valueType) {
-      case 'string':
-        return `"${value}"`
-      case 'number':
+      case 'string': {
+        const strValue = value as string
+        const escapedValue: string = strValue.replace('\'', '\\\'')
+        return `'${escapedValue}'${newLineChar}`
+      }
+      case 'number': {
         // Special cases
+        let numberRepresentation: string
         if (value === Number.POSITIVE_INFINITY) {
-          return 'inf'
+          numberRepresentation = 'inf'
         } else {
           if (value === Number.NEGATIVE_INFINITY) {
-            return '-inf'
+            numberRepresentation = '-inf'
           } else {
             if (isNaN(value)) {
-              return 'nan'
+              numberRepresentation = 'nan'
+            } else {
+              numberRepresentation = value.toString()
             }
           }
         }
 
         // Normal number
-        return value.toString()
+        return numberRepresentation + newLineChar
+      }
       case 'boolean':
-        return value ? 'true' : 'false'
-      case 'object':
+        return (value ? 'true' : 'false') + newLineChar
+      case 'object': {
         // Checks if it is an array as typeof [] === 'object'
         if (Array.isArray(value)) {
-          const list = value as any[]
-          const listValues = list.map((listElem) => this.getValueForString(indentationLevel, listElem))
-          return '[' + listValues.join(', ') + ']'
+          // Lists are a special case: if it has an object, and indented representation must be returned. In case
+          // of primitive values or nested arrays, a plain representation is more appropriated
+          const listValues: string[] = []
+          let atLeastOneObj = false
+          for (const listElem of value) {
+            const isObj = this.elemIsObj(listElem)
+            let strValue = this.dump(listElem, indentationLevel, isObj)
+
+            // Prevents multiples new lines
+            if (isObj) {
+              strValue = strValue.trimEnd()
+              atLeastOneObj = true
+            }
+
+            listValues.push(strValue)
+          }
+
+          let listStr = '['
+
+          // If there is at least one object adds an indentation to every non object value
+          let listJoinedStr: string
+          if (atLeastOneObj) {
+            listStr += '\n'
+            listJoinedStr = ''
+            const lastIdx = listValues.length - 1
+            for (let [idx, elem] of listValues.entries()) {
+              const elemIsObj = elem.startsWith('\n')
+              if (!elemIsObj) {
+                elem = ' '.repeat(4) + elem
+              } else {
+                // Removes new lines at the string start
+                elem = elem.replace(/^\n/, '')
+              }
+              listJoinedStr += elem
+              if (idx !== lastIdx) {
+                listJoinedStr += ',\n'
+              }
+            }
+          } else {
+            // In case of primitive or nested arrays, just returns a plain representation
+            listJoinedStr = listValues.join(', ')
+          }
+          listStr += listJoinedStr
+
+          // Adds a last new line to append closing bracket
+          if (atLeastOneObj) {
+            listStr += '\n'
+          }
+          return listStr + ']' + newLineChar
         }
 
-        return '\n' + this.dump(value, indentationLevel + 1)
+        // It is an object
+        let result = ''
+        const indentation = ' '.repeat(indentationLevel * 4)
+        for (const [key, dictValue] of Object.entries(value)) {
+          result += `${indentation}${key}:`
+          // If it is an object it does not add a whitespace after key
+          if (!this.elemIsObj(dictValue)) {
+            result += ' '
+          }
+
+          result += this.dump(dictValue, indentationLevel + 1, true)
+        }
+
+        return '\n' + result
+      }
     }
 
     return ''
-  }
-
-  /**
-   * Generates a Gura string from a dictionary(aka.stringify).
-   *
-   * @param data - Object data to stringify.
-   * @param indentationLevel - Current indentation level.
-   * @returns String with the data in Gura format.
-   */
-  dump (data: Object, indentationLevel: number = 0): string {
-    let result = ''
-    Object.entries(data).forEach(([key, value]) => {
-      const indentation = ' '.repeat(indentationLevel * 4)
-      result += `${indentation}${key}: `
-      result += this.getValueForString(indentationLevel, value)
-      result += '\n'
-    })
-
-    return result
   }
 }
 
@@ -903,7 +962,8 @@ const parse = (text: string): Object => {
  * @returns String with the data in Gura format.
  */
 const dump = (data: Object): string => {
-  return new GuraParser().dump(data)
+  const content = new GuraParser().dump(data, 0, true)
+  return content.trimStart().trimEnd()
 }
 
 export {
