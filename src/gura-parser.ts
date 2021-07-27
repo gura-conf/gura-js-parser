@@ -72,6 +72,7 @@ class GuraParser extends Parser {
     this.key = this.key.bind(this)
     this.pair = this.pair.bind(this)
     this.null = this.null.bind(this)
+    this.emptyObject = this.emptyObject.bind(this)
     this.boolean = this.boolean.bind(this)
     this.unquotedString = this.unquotedString.bind(this)
     this.number = this.number.bind(this)
@@ -338,7 +339,15 @@ class GuraParser extends Parser {
    */
   primitiveType (): MatchResult {
     this.maybeMatch([this.ws])
-    return this.match([this.null, this.boolean, this.basicString, this.literalString, this.number, this.variableValue])
+    return this.match([
+      this.null,
+      this.boolean,
+      this.basicString,
+      this.literalString,
+      this.number,
+      this.variableValue,
+      this.emptyObject
+    ])
   }
 
   /**
@@ -614,13 +623,23 @@ class GuraParser extends Parser {
   }
 
   /**
-   * Consumes null keyword and return null.
+   * Consumes 'null' keyword and returns null.
    *
    * @returns Null.
    */
   null (): MatchResult {
     this.keyword(['null'])
     return { resultType: MatchResultType.PRIMITIVE, value: null }
+  }
+
+  /**
+   * Consumes 'empty' keyword and returns an empty object.
+   *
+   * @returns Empty object.
+   */
+  emptyObject (): MatchResult {
+    this.keyword(['empty'])
+    return { resultType: MatchResultType.PRIMITIVE, value: {} }
   }
 
   /**
@@ -922,19 +941,24 @@ class GuraParser extends Parser {
         }
 
         // It is an object
-        let result = ''
-        const indentation = ' '.repeat(indentationLevel * 4)
-        for (const [key, dictValue] of Object.entries(value)) {
-          result += `${indentation}${key}:`
-          // If it is an object it does not add a whitespace after key
-          if (!this.elemIsObj(dictValue)) {
-            result += ' '
+        if (Object.entries(value).length > 0) {
+          let result = ''
+          const indentation = ' '.repeat(indentationLevel * 4)
+          for (const [key, dictValue] of Object.entries(value)) {
+            result += `${indentation}${key}:`
+            // If it is an object it does not add a whitespace after key
+            if (!this.elemIsObj(dictValue)) {
+              result += ' '
+            }
+
+            result += this.dump(dictValue, indentationLevel + 1, true)
           }
 
-          result += this.dump(dictValue, indentationLevel + 1, true)
+          return '\n' + result
         }
 
-        return '\n' + result
+        // Empty object
+        return ' empty\n'
       }
     }
 

@@ -30,6 +30,7 @@ const expected = {
   sf2: Infinity,
   sf3: -Infinity,
   null: null,
+  empty_single: {},
   bool1: true,
   bool2: false,
   1234: '1234',
@@ -72,16 +73,39 @@ const expected = {
   ],
   my_server: {
     host: '127.0.0.1',
+    empty_nested: {},
     port: 8080,
     native_auth: true
   },
   gura_is_cool: 'Gura is cool'
 }
 
+const emptyObject = {
+  empty_object: {}
+}
+
 /** Test all the common cases except NaNs. */
 test('parse', () => {
   const parsedData = getFileContentParsed(parentFolder, 'full.ura')
   expect(parsedData).toEqual(expected)
+})
+
+/** Tests empty object. */
+test('empty', () => {
+  const parsedData = parse('empty_object: empty')
+  expect(parsedData).toEqual(emptyObject)
+})
+
+/** Tests empty object with several blanks. */
+test('empty_2', () => {
+  const parsedData = parse('empty_object:     empty    ')
+  expect(parsedData).toEqual(emptyObject)
+})
+
+/** Tests empty object with comments and blank lines. */
+test('empty_3', () => {
+  const parsedData = getFileContentParsed(parentFolder, 'empty.ura')
+  expect(parsedData).toEqual(emptyObject)
 })
 
 /** Test NaNs cases as they are an exceptional case. */
