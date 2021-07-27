@@ -1,4 +1,4 @@
-import { InvalidIndentationError, ParseError } from '../../src/index'
+import { InvalidIndentationError, ParseError, parse } from '../../src/index'
 import { getFileContentParsed } from '../utils'
 
 const parentFolder = 'objects'
@@ -20,10 +20,32 @@ const expected = {
   }
 }
 
+const emptyObject = {
+  empty_object: {}
+}
+
 /** Tests all kind of objects. */
 test('test_normal', () => {
   const parsedData = getFileContentParsed(parentFolder, 'normal.ura')
   expect(parsedData).toEqual(expected)
+})
+
+/** Tests empty object. */
+test('empty', () => {
+  const parsedData = parse('empty_object: empty')
+  expect(parsedData).toEqual(emptyObject)
+})
+
+/** Tests empty object with several blanks. */
+test('empty_2', () => {
+  const parsedData = parse('empty_object:     empty    ')
+  expect(parsedData).toEqual(emptyObject)
+})
+
+/** Tests empty object with comments and blank lines. */
+test('empty_3', () => {
+  const parsedData = getFileContentParsed(parentFolder, 'empty.ura')
+  expect(parsedData).toEqual(emptyObject)
 })
 
 /** Tests all kind of objects with comments between elements. */
