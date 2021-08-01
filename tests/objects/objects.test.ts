@@ -67,3 +67,10 @@ test('test_invalid_2', () => {
     getFileContentParsed(parentFolder, 'invalid_2.ura')
   }).toThrow(InvalidIndentationError)
 })
+
+/** Tests parsing error in invalid objects. */
+test('test_invalid_3', () => {
+  expect(() => {
+    getFileContentParsed(parentFolder, 'invalid_3.ura')
+  }).toThrow(ParseError)
+})

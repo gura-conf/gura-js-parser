@@ -559,7 +559,6 @@ class GuraParser extends Parser {
 
     const key = this.match([this.key])
     this.maybeMatch([this.ws])
-    this.maybeMatch([this.newLine])
 
     // Check indentation
     const lastIndentationBlock = this.getLastIndentationLevel()
