@@ -607,6 +607,12 @@ class GuraParser extends Parser {
       result = result.value
     }
 
+    // Prevents issues with indentation inside a list that break objects
+    if (Array.isArray(result)) {
+      this.removeLastIndentationLevel()
+      this.indentationLevels.push(currentIndentationLevel)
+    }
+
     this.maybeMatch([this.newLine])
 
     return { resultType: MatchResultType.PAIR, value: [key, result, currentIndentationLevel] }

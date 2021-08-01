@@ -49,6 +49,19 @@ const expectedInsideObject = {
   }
 }
 
+const expectedTrailingComma = {
+  foo: [
+    {
+      bar: {
+        baz: [
+          { far: 'faz' }
+        ]
+      }
+    }
+  ],
+  barbaz: 'boo'
+}
+
 /** Tests all kind of arrays. */
 test('array_normal', () => {
   const parsedData = getFileContentParsed(parentFolder, 'normal.ura')
@@ -61,8 +74,16 @@ test('array_normal_with_comments', () => {
   expect(parsedData).toEqual(expected)
 })
 
+/** Tests a bug that breaks arrays with a mandatory trailing comma. In this case the trailing comma is
+ * missing and it should parse correctly.
+ */
+test('bug_trailing_comma', () => {
+  const parsedData = getFileContentParsed(parentFolder, 'bug_trailing_comma.ura')
+  expect(parsedData).toEqual(expectedTrailingComma)
+})
+
 /** Tests issue https://github.com/gura-conf/gura/issues/1. */
-test('_array_in_object', () => {
+test('array_in_object', () => {
   let parsedData = getFileContentParsed(parentFolder, 'array_in_object.ura')
   expect(parsedData).toEqual(expectedInsideObject)
   parsedData = getFileContentParsed(parentFolder, 'array_in_object.ura')
