@@ -25,6 +25,21 @@ const ESCAPE_SEQUENCES = {
   $: '$'
 }
 
+// Sequences that need escaped when dumping string values
+const SEQUENCES_TO_ESCAPE = {
+  '\\': '\\\\',
+  '\b': '\\b',
+  '\f': '\\f',
+  '\n': '\\n',
+  '\r': '\\r',
+  '\t': '\\t',
+  '"': '\\"',
+  $: '\\$'
+}
+
+// Indentation of 4 spaces
+const INDENT = '    '
+
 /* Data types to be returned by match expression methods */
 enum MatchResultType {
   USELESS_LINE,
@@ -78,6 +93,7 @@ class GuraParser extends Parser {
     this.number = this.number.bind(this)
     this.basicString = this.basicString.bind(this)
     this.literalString = this.literalString.bind(this)
+    this.dump = this.dump.bind(this)
   }
 
   /**
@@ -845,29 +861,31 @@ class GuraParser extends Parser {
    * @param elem - Element to check if is an object.
    * @returns True if it is a object. False otherwise.
    */
-  private elemIsObj = (elem: any) => typeof elem === 'object' && !Array.isArray(elem)
+  private elemIsObj = (elem: any) => elem !== null && typeof elem === 'object' && !Array.isArray(elem)
 
   /**
    * Generates a Gura string from a dictionary (aka. Stringify). Takes a value, check its type and returns its correct value in a recursive way.
    *
    * @param value - Value retrieved from dict to transform in string.
-   * @param indentationLevel - Current indentation level to compute indentation in string.
-   * @param newLine - If true, it prints a new line at the end of some values. This prevents some issues when dumps an object or array.
    * @returns String representation of the received value.
    */
-  dump (value: any, indentationLevel: number, newLine: boolean): string {
-    const newLineChar = newLine ? '\n' : ''
-
+  dump (value: any): string {
     if (value === null) {
-      return 'null' + newLineChar
+      return 'null'
     }
 
     const valueType = typeof value
     switch (valueType) {
       case 'string': {
-        const strValue = value as string
-        const escapedValue: string = strValue.replace('\'', '\\\'')
-        return `'${escapedValue}'${newLineChar}`
+        let result = ''
+
+        // Escapes everything that needs to be escaped
+        for (let i = 0; i < value.length; i++) {
+          const char = value.charAt(i)
+          result += SEQUENCES_TO_ESCAPE[char] ?? char
+        }
+
+        return `"${result}"`
       }
       case 'number': {
         // Special cases
@@ -887,83 +905,82 @@ class GuraParser extends Parser {
         }
 
         // Normal number
-        return numberRepresentation + newLineChar
+        return numberRepresentation
       }
       case 'boolean':
-        return (value ? 'true' : 'false') + newLineChar
+        return value ? 'true' : 'false'
       case 'object': {
         // Checks if it is an array as typeof [] === 'object'
         if (Array.isArray(value)) {
           // Lists are a special case: if it has an object, and indented representation must be returned. In case
           // of primitive values or nested arrays, a plain representation is more appropriated
-          const listValues: string[] = []
-          let atLeastOneObj = false
-          for (const listElem of value) {
-            const isObj = this.elemIsObj(listElem)
-            let strValue = this.dump(listElem, indentationLevel, isObj)
+          const valueAr = value as any[]
+          const shouldMultiline = valueAr.some((e) => this.elemIsObj(e) && Object.entries(e).length > 0)
 
-            // Prevents multiples new lines
-            if (isObj) {
-              strValue = strValue.trimEnd()
-              atLeastOneObj = true
+          if (!shouldMultiline) {
+            const stringifyValues = valueAr.map(this.dump)
+            return `[${stringifyValues.join(', ')}]`
+          }
+
+          let result = '['
+
+          const lastIdx = valueAr.length - 1
+          for (const [idx, entry] of valueAr.entries()) {
+            const stringifiedValue = this.dump(entry).trimRight()
+
+            result += '\n'
+
+            // If the stringified value contains multiple lines, indents all
+            // of them and adds them all to the result
+            if (stringifiedValue.includes('\n')) {
+              let splitted = stringifiedValue.split('\n')
+              splitted = splitted.map((element) => INDENT + element, splitted)
+              result += splitted.join('\n')
+            } else {
+              // Otherwise indent the value and add to result
+              result += INDENT + stringifiedValue
             }
 
-            listValues.push(strValue)
-          }
-
-          let listStr = '['
-
-          // If there is at least one object adds an indentation to every non object value
-          let listJoinedStr: string
-          if (atLeastOneObj) {
-            listStr += '\n'
-            listJoinedStr = ''
-            const lastIdx = listValues.length - 1
-            for (let [idx, elem] of listValues.entries()) {
-              const elemIsObj = elem.startsWith('\n')
-              if (!elemIsObj) {
-                elem = ' '.repeat(4) + elem
-              } else {
-                // Removes new lines at the string start
-                elem = elem.replace(/^\n/, '')
-              }
-              listJoinedStr += elem
-              if (idx !== lastIdx) {
-                listJoinedStr += ',\n'
-              }
+            // Add a comma if this entry is not the final entry in the list
+            if (idx < lastIdx) {
+              result += ','
             }
-          } else {
-            // In case of primitive or nested arrays, just returns a plain representation
-            listJoinedStr = listValues.join(', ')
           }
-          listStr += listJoinedStr
 
-          // Adds a last new line to append closing bracket
-          if (atLeastOneObj) {
-            listStr += '\n'
-          }
-          return listStr + ']' + newLineChar
+          result += '\n]'
+          return result
         }
 
         // It is an object
-        if (Object.entries(value).length > 0) {
-          let result = ''
-          const indentation = ' '.repeat(indentationLevel * 4)
-          for (const [key, dictValue] of Object.entries(value)) {
-            result += `${indentation}${key}:`
-            // If it is an object it does not add a whitespace after key
-            if (!this.elemIsObj(dictValue)) {
-              result += ' '
-            }
-
-            result += this.dump(dictValue, indentationLevel + 1, true)
-          }
-
-          return '\n' + result
+        if (Object.entries(value).length === 0) {
+          return 'empty'
         }
 
-        // Empty object
-        return ' empty\n'
+        let result = ''
+        for (const [key, dictValue] of Object.entries(value)) {
+          result += `${key}:`
+
+          // If the value is an object, splits the stringified value by
+          // newline and indents each line before adding it to the result
+          if (this.elemIsObj(dictValue)) {
+            const stringifiedValue = this.dump(dictValue).trimRight()
+            if (Object.entries(dictValue).length > 0) {
+              result += '\n'
+
+              for (const line of stringifiedValue.split('\n')) {
+                result += INDENT + line + '\n'
+              }
+            } else {
+              // Prevents indentation on empty objects
+              result += ' ' + stringifiedValue + '\n'
+            }
+          } else {
+            // Otherwise adds the stringified value
+            result += ` ${this.dump(dictValue)}\n`
+          }
+        }
+
+        return result
       }
     }
 
@@ -991,7 +1008,7 @@ const parse = (text: string): Object => {
  * @returns String with the data in Gura format.
  */
 const dump = (data: Object): string => {
-  const content = new GuraParser().dump(data, 0, true)
+  const content = new GuraParser().dump(data)
   return content.trimStart().trimEnd()
 }
 
