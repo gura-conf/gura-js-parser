@@ -934,7 +934,7 @@ class GuraParser extends Parser {
             // of them and adds them all to the result
             if (stringifiedValue.includes('\n')) {
               let splitted = stringifiedValue.split('\n')
-              splitted = splitted.map((element) => INDENT + element, splitted)
+              splitted = splitted.map((element) => INDENT + element)
               result += splitted.join('\n')
             } else {
               // Otherwise indent the value and add to result
