@@ -32,8 +32,8 @@ an_object:
 
 # Line breaks are OK when inside arrays
 hosts: [
-  "alpha",
-  "omega"
+    "alpha",
+    "omega"
 ]`
 
 // Parse: transforms a Gura string into a dictionary
@@ -61,14 +61,14 @@ If you are using this library for the browser, there are some components like `p
 
 ```javascript
 module.export = {
-  // ...
-  resolve: {
     // ...
-    fallback: {
-      fs: false,
-      path: false
+    resolve: {
+        // ...
+        fallback: {
+            fs: false,
+            path: false
+        }
     }
-  }
 }
 ```
 
