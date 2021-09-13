@@ -85,3 +85,11 @@ test('multiline_literal_strings', () => {
   const parsedData = getFileContentParsed(parentFolder, 'multiline_literal.ura')
   expect(parsedData).toEqual(expectedMultilineLiteral)
 })
+
+/** Tests invalid escape sentences interpreted as literals. */
+test('invalid_escape_sentence', () => {
+  const parsedData = parse('foo: "\t\\h\\i\\i"')
+  expect(parsedData).toEqual({
+    foo: '\t\\h\\i\\i'
+  })
+})

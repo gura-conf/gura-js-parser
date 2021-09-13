@@ -806,8 +806,8 @@ class GuraParser extends Parser {
             const charValue = String.fromCharCode(hexValue) // Converts from UNICODE to string
             chars.push(charValue)
           } else {
-            // Gets escaped char
-            chars.push(ESCAPE_SEQUENCES[escape] ?? char)
+            // Gets escaped char or interprets as literal
+            chars.push(ESCAPE_SEQUENCES[escape] ?? char + escape)
           }
         }
       } else {
