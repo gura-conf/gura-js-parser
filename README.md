@@ -89,7 +89,7 @@ Or you can join to our [community in Discord][discord-server]!
 To run all the tests: `yarn test` or `npm run test`
 
 
-## Licence
+## License
 
 This repository is distributed under the terms of the MIT license.
 
