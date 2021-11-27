@@ -79,6 +79,7 @@ All kind of contribution is welcome! If you want to contribute just:
 
 1. Fork this repository.
 1. Create a new branch and introduce there your new changes.
+1. Run `yarn check-all` (or `npm run check-all` with NPM). This command runs tests and linter to check that new changes are correct!
 1. Make a Pull Request!
 
 Or you can join to our [community in Discord][discord-server]!
