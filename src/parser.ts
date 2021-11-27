@@ -1,20 +1,4 @@
-/** Raises when a variable is not defined. */
-class ParseError extends Error {
-  public pos: number
-  public line: number
-  public message: string
-
-  constructor (pos: number, line: number, message: string) {
-    super(`${message} at line ${line} position ${pos}`)
-    Object.setPrototypeOf(this, new.target.prototype)
-    this.name = ParseError.name
-
-    // Public fields
-    this.pos = pos
-    this.line = line
-    this.message = message
-  }
-}
+import { ParseError } from './errors'
 
 /** Internal use for bad ranges. */
 class ValueError extends Error {
@@ -48,10 +32,11 @@ class Parser {
    */
   assertEnd () {
     if (this.pos < this.len) {
+      const errorPos = this.pos + 1
       throw new ParseError(
-        this.pos + 1,
+        errorPos,
         this.line,
-        `Expected end of string but got ${this.text[this.pos + 1]}`
+        `Expected end of string but got "${this.text[errorPos]}"`
       )
     }
   }
@@ -98,7 +83,7 @@ class Parser {
    */
   char (chars: string | null = null): string {
     if (this.pos >= this.len) {
-      const param = chars === null ? 'character' : `[${chars}]`
+      const param = chars === null ? 'next character' : `[${chars}]`
       throw new ParseError(
         this.pos + 1,
         this.line,
@@ -129,7 +114,7 @@ class Parser {
     throw new ParseError(
       this.pos + 1,
       this.line,
-      `Expected '[${chars}]' but got ${nextChar}`
+      `Expected [${chars}] but got "${nextChar}"`
     )
   }
 
@@ -143,9 +128,9 @@ class Parser {
   keyword (keywords: string[]): string {
     if (this.pos >= this.len) {
       throw new ParseError(
-        this.pos + 1,
+        this.pos,
         this.line,
-        `Expected ${keywords.join(',')} but got end of string`
+        `Expected "${keywords.join(', ')}" but got end of string`
       )
     }
 
@@ -159,10 +144,11 @@ class Parser {
       }
     }
 
+    const errorPos = this.pos + 1
     throw new ParseError(
-      this.pos + 1,
+      errorPos,
       this.line,
-      `Expected ${keywords.join(',')} but got ${this.text[this.pos + 1]}`
+      `Expected "${keywords.join(', ')}" but got "${this.text[errorPos]}"`
     )
   }
 
@@ -181,11 +167,13 @@ class Parser {
 
     for (const rule of rules) {
       const initialPos = this.pos
+      const initialLine = this.line
       try {
         return rule()
       } catch (ex) {
         if (ex instanceof ParseError) {
           this.pos = initialPos
+          this.line = initialLine
 
           if (ex.pos > lastErrorPos) {
             lastException = ex
@@ -211,7 +199,7 @@ class Parser {
       throw new ParseError(
         lastErrorPos,
         this.line,
-        `Expected ${lastErrorRules.join(',')} but got ${this.text[lastErrorPos]}`
+        `Expected ${lastErrorRules.join(', ')} but got "${this.text[lastErrorPos]}"`
       )
     }
   }

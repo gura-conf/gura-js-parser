@@ -118,18 +118,36 @@ class GuraParser extends Parser {
   private restartParams (text: string) {
     this.text = text
     this.pos = -1
-    this.line = 0
+    this.line = 1
     this.len = text.length - 1
+  }
+
+  /**
+   * Gets the Exception line and position considering indentation. Useful for InvalidIndentationError exceptions.
+   *
+   * @param childIndentationLevel - Child pair indentation level.
+   * @param initialLine - Initial line.
+   * @param initialPos - Initial position.
+   * @returns A tuple with correct position and line.
+   */
+  private exceptionDataWithInitialData (
+    childIndentationLevel: number,
+    initialLine: number,
+    initialPos: number
+  ): [number, number] {
+    const exceptionPos = initialPos + 2 + childIndentationLevel
+    const exceptionLine = initialLine + 1
+    return [exceptionLine, exceptionPos]
   }
 
   /**
    * Matches with a new line.
    */
   newLine () {
-    const res = this.char('\f\v\r\n')
-    if (res !== null) {
-      this.line += 1
-    }
+    this.char('\f\v\r\n')
+
+    // If this line is reached then new line matched as no exception was raised
+    this.line += 1
   }
 
   /**
@@ -169,7 +187,11 @@ class GuraParser extends Parser {
 
       // Tabs are not allowed
       if (blank === '\t') {
-        throw new InvalidIndentationError('Tabs are not allowed to define indentation blocks')
+        throw new InvalidIndentationError(
+          this.pos,
+          this.line,
+          'Tabs are not allowed to define indentation blocks'
+        )
       }
 
       currentIndentationLevel += 1
@@ -242,8 +264,10 @@ class GuraParser extends Parser {
 
       // Computes variables values in string
       if (char === '$') {
+        const initialPos = this.pos
+        const initialLine = this.line
         const varName = this.getVarName()
-        chars.push(this.getVariableValue(varName))
+        chars.push(this.getVariableValue(varName, initialPos, initialLine))
       } else {
         chars.push(char)
       }
@@ -299,12 +323,20 @@ class GuraParser extends Parser {
 
         // Files can be imported only once.This prevents circular reference
         if (this.importedFiles.has(fileToImport)) {
-          throw new DuplicatedImportError(`The file ${fileToImport} has been already imported`)
+          throw new DuplicatedImportError(
+            this.pos - fileToImport.length - 1, // -1 for the quotes (")
+            this.line,
+            `The file "${fileToImport}" has been already imported`
+          )
         }
 
         // Checks if file exists
         if (!existsSync(fileToImport)) {
-          throw new FileNotFoundError(`The file ${fileToImport} does not exist`)
+          throw new FileNotFoundError(
+            0,
+            0,
+            `The file "${fileToImport}" does not exist`
+          )
         }
 
         // Gets content considering imports
@@ -355,7 +387,7 @@ class GuraParser extends Parser {
    */
   primitiveType (): MatchResult {
     this.maybeMatch([this.ws])
-    return this.match([
+    const result = this.match([
       this.null,
       this.boolean,
       this.basicString,
@@ -364,6 +396,8 @@ class GuraParser extends Parser {
       this.variableValue,
       this.emptyObject
     ])
+    this.maybeMatch([this.ws])
+    return result
   }
 
   /**
@@ -379,10 +413,12 @@ class GuraParser extends Parser {
    * Gets a variable value for a specific key from defined variables in file or as environment variable.
    *
    * @param key - Key to retrieve.
+   * @param position - Current position to report Exception (if needed).
+   * @param line - Current line to report Exception (if needed).
    * @throws VariableNotDefinedError if the variable is not defined in file nor environment.
    * @returns Variable value.
    */
-  private getVariableValue (key: string): any | null {
+  private getVariableValue (key: string, position: number, line: number): any | null {
     if (this.variables.has(key)) {
       return this.variables.get(key)
     }
@@ -392,7 +428,10 @@ class GuraParser extends Parser {
       return envVariable
     }
 
-    throw new VariableNotDefinedError(`Variable '${key}' is not defined in Gura nor as environment variable`)
+    throw new VariableNotDefinedError(
+      position,
+      line,
+      `Variable "${key}" is not defined in Gura nor as environment variable`)
   }
 
   /**
@@ -403,7 +442,9 @@ class GuraParser extends Parser {
   variableValue (): MatchResult {
     this.keyword(['$'])
     const key = this.match([this.unquotedString])
-    return { resultType: MatchResultType.PRIMITIVE, value: this.getVariableValue(key) }
+    const pos = this.pos - key.length
+    const line = this.line
+    return { resultType: MatchResultType.PRIMITIVE, value: this.getVariableValue(key, pos, line) }
   }
 
   /**
@@ -413,13 +454,20 @@ class GuraParser extends Parser {
    * @returns Match result indicating that a variable has been added.
    */
   variable (): MatchResult {
+    const initialPos = this.pos
+    const initialLine = this.line
+
     this.keyword(['$'])
     const key = this.match([this.key])
     this.maybeMatch([this.ws])
     const matchResult: MatchResult = this.match([this.basicString, this.literalString, this.number, this.variableValue])
 
     if (this.variables.has(key)) {
-      throw new DuplicatedVariableError(`Variable '${key}' has been already declared`)
+      throw new DuplicatedVariableError(
+        initialPos + 1,
+        initialLine,
+        `Variable "${key}" has been already declared`
+      )
     }
 
     // Store as variable
@@ -504,7 +552,10 @@ class GuraParser extends Parser {
     const result = {}
     let indentationLevel = 0
     while (this.pos < this.len) {
-      const item: MatchResult | null = this.maybeMatch([this.variable, this.pair, this.uselessLine])
+      let initialPos = this.pos
+      const initialLine = this.line
+
+      const item: MatchResult | null = this.match([this.variable, this.pair, this.uselessLine])
 
       if (item === null) {
         break
@@ -514,18 +565,26 @@ class GuraParser extends Parser {
         // It is a key / value pair
         const [key, value, indentation] = item.value
         if (result[key] !== undefined) {
-          throw new DuplicatedKeyError(`The key '${key}' has been already defined`)
+          throw new DuplicatedKeyError(
+            initialPos + 1 + indentation,
+            initialLine,
+            `The key "${key}" has been already defined`
+          )
         }
 
         result[key] = value
         indentationLevel = indentation
       }
 
+      initialPos = this.pos
+      this.maybeMatch([this.ws])
       if (this.maybeKeyword([']', ',']) !== null) {
         // Breaks if it is the end of a list
         this.removeLastIndentationLevel()
         this.pos -= 1
         break
+      } else {
+        this.pos = initialPos
       }
     }
 
@@ -553,10 +612,11 @@ class GuraParser extends Parser {
     const key = this.match([this.unquotedString])
 
     if (typeof key !== 'string') {
+      const errorPos = this.pos + 1
       throw new ParseError(
-        this.pos + 1,
+        errorPos,
         this.line,
-        `Expected string but got "${this.text.substring(this.pos + 1)}"`
+        `Expected string for key but got "${this.text[errorPos]}"`
       )
     }
 
@@ -570,7 +630,7 @@ class GuraParser extends Parser {
    * @returns Matched key - value pair.null if the indentation level is lower than the last one(to indicate the ending of a parent object).
    */
   pair (): MatchResult | null {
-    const posBeforePair = this.pos
+    const posBeforePair = this.pos // To report correct position in case of exception
     const currentIndentationLevel = this.maybeMatch([this.wsWithIndentation])
 
     const key = this.match([this.key])
@@ -581,7 +641,11 @@ class GuraParser extends Parser {
 
     // Check if indentation is divisible by 4
     if (currentIndentationLevel % 4 !== 0) {
-      throw new InvalidIndentationError(`Indentation block (${currentIndentationLevel}) must be divisible by 4`)
+      throw new InvalidIndentationError(
+        posBeforePair,
+        this.line,
+        `Indentation block (${currentIndentationLevel}) must be divisible by 4`
+      )
     }
 
     if (lastIndentationBlock === null || currentIndentationLevel > lastIndentationBlock) {
@@ -597,6 +661,10 @@ class GuraParser extends Parser {
       }
     }
 
+    // To report well the line number in case of exceptions
+    const initialPos = this.pos
+    const initialLine = this.line
+
     // If it === null then is an empty expression, and therefore invalid
     let result: MatchResult | null = this.match([this.anyType])
     if (result === null) {
@@ -609,12 +677,34 @@ class GuraParser extends Parser {
 
     // Checks indentation against parent level
     if (result.resultType === MatchResultType.EXPRESSION) {
-      const [objectValues, indentationLevel] = result.value
-      if (indentationLevel === currentIndentationLevel) {
-        throw new InvalidIndentationError(`Wrong level for parent with key ${key}`)
+      const [objectValues, childIndentationLevel] = result.value
+      if (childIndentationLevel === currentIndentationLevel) {
+        // Considers the error position and line for the first child
+        const [exceptionLine, exceptionPos] = this.exceptionDataWithInitialData(
+          childIndentationLevel,
+          initialLine,
+          initialPos
+        )
+
+        const childKey = Object.keys(objectValues)[0]
+
+        throw new InvalidIndentationError(
+          exceptionPos,
+          exceptionLine,
+          `Wrong indentation level for pair with key "${childKey}" (parent "${key}" has the same indentation level)`
+        )
       } else {
-        if (Math.abs(currentIndentationLevel - indentationLevel) !== 4) {
-          throw new InvalidIndentationError('Difference between different indentation levels must be 4')
+        if (Math.abs(currentIndentationLevel - childIndentationLevel) !== 4) {
+          const [exceptionLine, exceptionPos] = this.exceptionDataWithInitialData(
+            childIndentationLevel,
+            initialLine,
+            initialPos
+          )
+          throw new InvalidIndentationError(
+            exceptionPos,
+            exceptionLine,
+            'Difference between different indentation levels must be 4'
+          )
         }
       }
 
@@ -756,7 +846,7 @@ class GuraParser extends Parser {
       throw new ParseError(
         this.pos + 1,
         this.line,
-        `'${result}' is not a valid number`
+        `"${result}" is not a valid number`
       )
     }
 
@@ -773,10 +863,10 @@ class GuraParser extends Parser {
 
     const isMultiline = quote === '"""'
 
-    // NOTE: A newline immediately following the opening delimiter will be trimmed.All other whitespace and
+    // NOTE: a newline immediately following the opening delimiter will be trimmed.All other whitespace and
     // newline characters remain intact.
-    if (isMultiline) {
-      this.maybeChar('\n')
+    if (isMultiline && this.maybeChar('\n') !== null) {
+      this.line += 1
     }
 
     const chars = []
@@ -813,8 +903,10 @@ class GuraParser extends Parser {
       } else {
         // Computes variables values in string
         if (char === '$') {
+          const initialPos = this.pos
+          const initialLine = this.line
           const varName = this.getVarName()
-          chars.push(this.getVariableValue(varName))
+          chars.push(this.getVariableValue(varName, initialPos, initialLine))
         } else {
           chars.push(char)
         }
@@ -834,10 +926,10 @@ class GuraParser extends Parser {
 
     const isMultiline = quote === "'''"
 
-    // NOTE: A newline immediately following the opening delimiter will be trimmed.All other whitespace and
+    // NOTE: a newline immediately following the opening delimiter will be trimmed.All other whitespace and
     // newline characters remain intact.
-    if (isMultiline) {
-      this.maybeChar('\n')
+    if (isMultiline && this.maybeChar('\n') !== null) {
+      this.line += 1
     }
 
     const chars = []
