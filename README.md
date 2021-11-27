@@ -1,5 +1,7 @@
 # Gura Javascript/Typescript parser
 
+[![CI](https://github.com/gura-conf/gura-js-parser/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/gura-conf/gura-js-parser/actions/workflows/main.yml)
+
 This repository contains the implementation of a [Gura][gura] (compliant with version 1.0.0) format parser for Javascript written in pure Typescript.
 
 
