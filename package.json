@@ -1,9 +1,11 @@
 {
   "name": "gura",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "description": "A Gura parser for Javascript/Typescript",
   "scripts": {
     "test": "jest",
+    "lint": "eslint './src/**/*.{ts,js}'",
+    "check-all": "yarn test && yarn lint",
     "build": "del 'dist/*' && tsc",
     "upload": "yarn build && yarn publish"
   },
