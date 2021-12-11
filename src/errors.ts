@@ -9,72 +9,38 @@ class GuraError extends Error {
   public message: string
 
   constructor (pos: number, line: number, message: string) {
-    super(`${message} at line ${line} (text position = ${pos})`)
+    const finalMessage = `${message} at line ${line} (text position = ${pos})`
+
+    super(finalMessage)
     Object.setPrototypeOf(this, new.target.prototype)
-    this.name = ParseError.name
+    this.name = new.target.name
 
     // Public fields
     this.pos = pos
     this.line = line
-    this.message = message
+    this.message = finalMessage
   }
 }
 
-class ParseError extends GuraError { }
+class ParseError extends GuraError {}
 
 /** Raises when a variable is not defined. */
-class VariableNotDefinedError extends GuraError {
-  constructor (pos: number, line: number, message: string) {
-    super(pos, line, message)
-    Object.setPrototypeOf(this, new.target.prototype)
-    this.name = VariableNotDefinedError.name
-  }
-}
+class VariableNotDefinedError extends GuraError {}
 
 /** Raises when a variable is defined more than once. */
-class DuplicatedVariableError extends GuraError {
-  constructor (pos: number, line: number, message: string) {
-    super(pos, line, message)
-    Object.setPrototypeOf(this, new.target.prototype)
-    this.name = DuplicatedVariableError.name
-  }
-}
+class DuplicatedVariableError extends GuraError {}
 
 /** Raises when indentation is invalid. */
-class InvalidIndentationError extends GuraError {
-  constructor (pos: number, line: number, message: string) {
-    super(pos, line, message)
-    Object.setPrototypeOf(this, new.target.prototype)
-    this.name = InvalidIndentationError.name
-  }
-}
+class InvalidIndentationError extends GuraError {}
 
 /** Raises when file to be parsed does not exist. */
-class FileNotFoundError extends GuraError {
-  constructor (pos: number, line: number, message: string) {
-    super(pos, line, message)
-    Object.setPrototypeOf(this, new.target.prototype)
-    this.name = FileNotFoundError.name
-  }
-}
+class FileNotFoundError extends GuraError {}
 
 /** Raises when a key is defined more than once. */
-class DuplicatedKeyError extends GuraError {
-  constructor (pos: number, line: number, message: string) {
-    super(pos, line, message)
-    Object.setPrototypeOf(this, new.target.prototype)
-    this.name = DuplicatedKeyError.name
-  }
-}
+class DuplicatedKeyError extends GuraError {}
 
 /** Raises when a file is imported more than once. */
-class DuplicatedImportError extends GuraError {
-  constructor (pos: number, line: number, message: string) {
-    super(pos, line, message)
-    Object.setPrototypeOf(this, new.target.prototype)
-    this.name = DuplicatedImportError.name
-  }
-}
+class DuplicatedImportError extends GuraError {}
 
 export {
   GuraError,

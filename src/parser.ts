@@ -199,7 +199,7 @@ class Parser {
       throw new ParseError(
         lastErrorPos,
         this.line,
-        `Expected ${lastErrorRules.join(', ')} but got "${this.text[lastErrorPos]}"`
+        `Expected ${lastErrorRules.map((e) => e.name.substring(6)).join(', ')} but got "${this.text[lastErrorPos]}"`
       )
     }
   }
