@@ -22,7 +22,7 @@ bower install gura --save
 ## Usage
 
 ```typescript
-import { parse, dump } from 'gura';
+import { parse, dump } from 'gura'
 
 const guraString = `
 # This is a Gura document.
